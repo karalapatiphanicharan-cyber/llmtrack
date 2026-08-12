@@ -11,7 +11,7 @@
     <header class="popup-header">
       <div class="logo-area">
         <span class="logo-text">LLMTrack</span>
-        <span class="badge">Phase 1</span>
+        <span class="badge">Phase 2</span>
       </div>
       <p class="subtitle">AI Usage Tracker</p>
     </header>
@@ -28,6 +28,14 @@
           <span class="engine-label">Detection Status:</span>
           <span id="detection-status" class="engine-status inactive">Inactive</span>
         </div>
+        <div class="engine-row">
+          <span class="engine-label">Session Started:</span>
+          <span id="session-started-time" class="status-value">-</span>
+        </div>
+        <div class="engine-row">
+          <span class="engine-label">Current Session:</span>
+          <span id="current-session-duration" class="status-value">-</span>
+        </div>
       </div>
 
       <div class="card status-card">
@@ -37,27 +45,36 @@
         </div>
         <div class="status-row">
           <span class="status-label">Extension Version:</span>
-          <span class="status-value">0.1.0</span>
+          <span class="status-value">0.2.0</span>
         </div>
       </div>
 
       <div class="card platforms-card">
-        <h3>Supported Platforms</h3>
+        <h3>Today's Usage</h3>
         <ul class="platform-list">
           <li class="platform-item">
             <span class="platform-indicator chatgpt"></span>
-            <span class="platform-name">ChatGPT</span>
-            <span class="platform-domain">chatgpt.com</span>
+            <div class="platform-details">
+              <span class="platform-name">ChatGPT</span>
+              <span class="platform-domain">chatgpt.com</span>
+            </div>
+            <span id="usage-chatgpt" class="platform-usage">0s</span>
           </li>
           <li class="platform-item">
             <span class="platform-indicator gemini"></span>
-            <span class="platform-name">Gemini</span>
-            <span class="platform-domain">gemini.google.com</span>
+            <div class="platform-details">
+              <span class="platform-name">Gemini</span>
+              <span class="platform-domain">gemini.google.com</span>
+            </div>
+            <span id="usage-gemini" class="platform-usage">0s</span>
           </li>
           <li class="platform-item">
             <span class="platform-indicator claude"></span>
-            <span class="platform-name">Claude</span>
-            <span class="platform-domain">claude.ai</span>
+            <div class="platform-details">
+              <span class="platform-name">Claude</span>
+              <span class="platform-domain">claude.ai</span>
+            </div>
+            <span id="usage-claude" class="platform-usage">0s</span>
           </li>
         </ul>
       </div>
