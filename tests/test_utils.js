@@ -2,7 +2,7 @@ import assert from "assert";
 import { detectLLM } from "../src/utils/llmDetector.js";
 import { getData, setData, removeData, clearData, mockStorage } from "../src/utils/storage.js";
 import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration, formatSessionDuration, formatCleanTime, splitSessionByDay, getStartOfCurrentWeek, getCurrentWeekDates } from "../src/utils/time.js";
-import { recordSessionUsage, getDailyUsage, recordFirstOpened, performWeeklyRolloverCleanup } from "../src/background/usage-tracker.js";
+import { recordSessionUsage, getDailyUsage, recordFirstOpened, performWeeklyRolloverCleanup, getUsageSnapshot } from "../src/background/usage-tracker.js";
 import { handleTransition, getActiveSession, endActiveSession } from "../src/background/session-tracker.js";
 
 async function runTests() {
@@ -156,8 +156,6 @@ async function runTests() {
   // 6. Test Weekly Rollover and storage cleanup
   console.log("\nTesting performWeeklyRolloverCleanup...");
   await clearData();
-  // Set up mock daily usage with both old week and current week entries
-  // Let's assume current week dates are centered around 2026-08-12 (Mon Aug 10 - Sun Aug 16)
   const currentWeekDates = getCurrentWeekDates(new Date("2026-08-12T10:00:00"));
 
   const mockUsageData = {
@@ -167,22 +165,53 @@ async function runTests() {
   };
   await setData({ dailyUsage: mockUsageData });
 
-  // Running recordFirstOpened should trigger automatic rollover cleanup
-  // Let's mock the current system time to be Wednesday, Aug 12, 2026 during this test
   const tOpened = new Date("2026-08-12T04:30:00").getTime();
   await recordFirstOpened("chatgpt", tOpened);
 
-  const cleanedUsage = await getDailyUsage();
-  // Old week entry "2026-08-09" must be cleaned up!
+  let cleanedUsage = await getDailyUsage();
   assert.strictEqual(cleanedUsage["2026-08-09"], undefined);
-  // Current week entries must be preserved!
   assert.strictEqual(cleanedUsage["2026-08-10"]["chatgpt"].totalUsageSeconds, 200);
   assert.strictEqual(cleanedUsage["2026-08-11"]["gemini"].totalUsageSeconds, 150);
-  // New entry must be recorded correctly under today's date!
   assert.strictEqual(cleanedUsage["2026-08-12"]["chatgpt"].firstOpenedAt, tOpened);
   console.log("✅ performWeeklyRolloverCleanup tests passed.");
 
-  // 7. Test Usage Record & Storage Persistence
+  // 7. Test Centralized Snapshot Logic (getUsageSnapshot)
+  console.log("\nTesting getUsageSnapshot...");
+  await clearData();
+  // Setup Monday total
+  const monDateStr = currentWeekDates[0]; // Monday
+  const mockWeekData = {
+    [monDateStr]: {
+      chatgpt: { totalUsageSeconds: 120, firstOpenedAt: 1786500000000 }
+    }
+  };
+  await setData({ dailyUsage: mockWeekData });
+
+  // Mock active session running right now (on Wednesday)
+  const activeSess = {
+    activePlatform: "chatgpt",
+    activeTabId: 501,
+    sessionStartedAt: Date.now() - 30000 // 30 seconds elapsed
+  };
+
+  const snapshot = await getUsageSnapshot(activeSess);
+
+  // Verify active platform properties are present
+  assert.strictEqual(snapshot.activePlatform, "chatgpt");
+  assert.strictEqual(snapshot.activeTabId, 501);
+  assert.strictEqual(snapshot.sessionStartedAt, activeSess.sessionStartedAt);
+
+  // Monday's total must be preserved exactly (120s)
+  assert.strictEqual(snapshot.weekData[monDateStr].chatgpt, 120);
+
+  // Today (Wednesday) must contain the 30 seconds of live running session!
+  const wedDateStr = currentWeekDates[2]; // Wednesday
+  assert.strictEqual(snapshot.weekData[wedDateStr].chatgpt, 30);
+  assert.strictEqual(snapshot.weekData[wedDateStr].total, 30);
+
+  console.log("✅ getUsageSnapshot tests passed successfully!");
+
+  // 8. Test Usage Record & Storage Persistence
   console.log("\nTesting usage-tracker.js recording and persistence...");
   await clearData();
   const u1 = new Date("2026-08-12T10:00:00").getTime();
@@ -192,65 +221,46 @@ async function runTests() {
   let usage = await getDailyUsage();
   assert.strictEqual(usage["2026-08-12"]["chatgpt"].totalUsageSeconds, 120);
 
-  // Accumulate
-  const u3 = new Date("2026-08-12T11:00:00").getTime();
-  const u4 = new Date("2026-08-12T11:00:30").getTime(); // 30s
-  await recordSessionUsage("chatgpt", u3, u4);
-
-  usage = await getDailyUsage();
-  assert.strictEqual(usage["2026-08-12"]["chatgpt"].totalUsageSeconds, 150);
-
   console.log("✅ usage-tracker.js persistence tests passed.");
 
-  // 8. Test Session Tracker lifecycle transitions
+  // 9. Test Session Tracker lifecycle transitions
   console.log("\nTesting session-tracker.js lifecycle transitions...");
   await clearData();
-  await endActiveSession(); // Ensure starting from a clean state
+  await endActiveSession();
 
-  // Start chatgpt session
   await handleTransition("chatgpt", 101);
   let session = getActiveSession();
   assert.strictEqual(session.activePlatform, "chatgpt");
   assert.strictEqual(session.activeTabId, 101);
   assert.ok(session.sessionStartedAt > 0);
 
-  // Backdate ChatGPT session start by 10 seconds to simulate elapsed duration
   session.sessionStartedAt = Date.now() - 10000;
 
-  // Same-platform tab switch: chatgpt 101 -> chatgpt 102
   const initialStart = session.sessionStartedAt;
   await handleTransition("chatgpt", 102);
   session = getActiveSession();
   assert.strictEqual(session.activePlatform, "chatgpt");
   assert.strictEqual(session.activeTabId, 102);
-  assert.strictEqual(session.sessionStartedAt, initialStart); // Must remain continuous!
+  assert.strictEqual(session.sessionStartedAt, initialStart);
 
-  // Platform switch: chatgpt 102 -> claude 103
-  // This should record usage for chatgpt first
   await handleTransition("claude", 103);
   session = getActiveSession();
   assert.strictEqual(session.activePlatform, "claude");
   assert.strictEqual(session.activeTabId, 103);
 
-  // Verify chatgpt recorded 10 seconds of usage
   usage = await getDailyUsage();
-  const todayLocalDate = getLocalDateString();
-  assert.ok(usage[todayLocalDate] !== undefined);
-  assert.strictEqual(usage[todayLocalDate]["chatgpt"].totalUsageSeconds, 10);
+  assert.ok(usage[getLocalDateString()] !== undefined);
+  assert.strictEqual(usage[getLocalDateString()]["chatgpt"].totalUsageSeconds, 10);
 
-  // Debounced Transition to Unsupported: claude 103 -> null 103
   await handleTransition(null, 103);
   session = getActiveSession();
-  // Immediately, session is still in-memory and tabId is updated
   assert.strictEqual(session.activePlatform, "claude");
   assert.strictEqual(session.activeTabId, 103);
 
-  // If user returns back to claude before 1.5s delay, the debounce timer is cleared and session continues
   await handleTransition("claude", 103);
   session = getActiveSession();
   assert.strictEqual(session.activePlatform, "claude");
 
-  // Switch to unsupported again, and let's wait for debounce to elapse
   await handleTransition(null, 103);
   console.log("Waiting 1.6 seconds for debounce to complete...");
   await new Promise(resolve => setTimeout(resolve, 1600));

@@ -34,15 +34,15 @@ body {
 .popup-container {
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 14px;
   min-height: 290px;
 }
 
 /* Header */
 .popup-header {
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 6px;
-  margin-bottom: 10px;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .logo-area {
@@ -207,6 +207,19 @@ body {
 .detected-text {
   font-size: 13px;
   font-weight: 600;
+}
+
+/* Unsupported page instruction msg styling */
+.unsupported-msg {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  text-align: center;
 }
 
 /* Detail Rows Card with Layered Surfaces */
