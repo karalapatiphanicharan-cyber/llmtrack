@@ -4,7 +4,7 @@
  * and active LLM detection state.
  */
 
-import { formatSessionDuration, formatCleanTime, getLocalDateString } from "../utils/time.js";
+import { formatSessionDuration, formatCleanTime, getLocalDateString, splitSessionByDay } from "../utils/time.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const engineStatusElement = document.getElementById("engine-status");
@@ -99,6 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   /**
    * Render Today's usage total.
    * If a platform is active, we add the live running elapsed time to its display dynamically.
+   * Uses splitSessionByDay to ensure only today's segment of a running session is added.
    */
   function updateUsageDisplay() {
     const todayStr = getLocalDateString();
@@ -113,10 +114,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Add live running time if active
       if (activeSessionState && activeSessionState.active && activeSessionState.platform === platform && activeSessionState.sessionStartedAt) {
-        const elapsedMs = Date.now() - activeSessionState.sessionStartedAt;
-        const liveSeconds = Math.floor(elapsedMs / 1000);
-        if (liveSeconds > 0) {
-          totalSeconds += liveSeconds;
+        // Split the running session up to now
+        const segments = splitSessionByDay(activeSessionState.sessionStartedAt, Date.now());
+        const todaySegment = segments.find(s => s.date === todayStr);
+        if (todaySegment) {
+          totalSeconds += Math.floor(todaySegment.durationMs / 1000);
         }
       }
 

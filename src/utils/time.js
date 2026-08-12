@@ -106,3 +106,39 @@ export function formatCleanTime(timestamp) {
   hours = hours ? hours : 12; // Hour '0' becomes '12'
   return `${hours}:${minutes} ${ampm}`;
 }
+
+/**
+ * Splits a session crossing midnight boundaries into segments for each local calendar date.
+ * @param {number} startTime - Start timestamp in ms.
+ * @param {number} endTime - End timestamp in ms.
+ * @returns {Array<{date: string, durationMs: number}>} Segments of the session.
+ */
+export function splitSessionByDay(startTime, endTime) {
+  if (!startTime || !endTime || endTime <= startTime) {
+    return [];
+  }
+
+  const segments = [];
+  let currentStart = startTime;
+
+  while (currentStart < endTime) {
+    const d = new Date(currentStart);
+    // Get the timestamp of the next midnight in local timezone
+    const nextMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
+    const nextMidnightTime = nextMidnight.getTime();
+
+    if (endTime < nextMidnightTime) {
+      const dateStr = getLocalDateString(new Date(currentStart));
+      const durationMs = endTime - currentStart;
+      segments.push({ date: dateStr, durationMs });
+      break;
+    } else {
+      const dateStr = getLocalDateString(new Date(currentStart));
+      const durationMs = nextMidnightTime - currentStart;
+      segments.push({ date: dateStr, durationMs });
+      currentStart = nextMidnightTime;
+    }
+  }
+
+  return segments;
+}
