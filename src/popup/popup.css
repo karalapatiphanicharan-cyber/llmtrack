@@ -236,15 +236,27 @@ body {
   background-color: var(--accent-claude);
 }
 
+.platform-details {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
 .platform-name {
   font-weight: 600;
-  flex-grow: 1;
   font-size: 13px;
 }
 
 .platform-domain {
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.platform-usage {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--primary-color);
+  margin-left: auto;
 }
 
 /* Info Banner */
