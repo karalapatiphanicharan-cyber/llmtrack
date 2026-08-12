@@ -4,7 +4,7 @@
  * platform switching, browser focus shifts, and transient navigation debouncing.
  */
 
-import { recordSessionUsage } from "./usage-tracker.js";
+import { recordSessionUsage, recordFirstOpened } from "./usage-tracker.js";
 import { getData, setData } from "../utils/storage.js";
 
 // Central memory state for current active session
@@ -97,6 +97,9 @@ export async function handleTransition(newPlatform, newTabId) {
     activeSession.sessionStartedAt = Date.now();
     await saveSessionToStorage();
     console.log(`[LLMTrack] Session started: ${newPlatform}`);
+
+    // Persist firstOpenedAt for this platform today
+    await recordFirstOpened(newPlatform, activeSession.sessionStartedAt);
   }
 }
 

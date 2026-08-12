@@ -1,8 +1,8 @@
 import assert from "assert";
 import { detectLLM } from "../src/utils/llmDetector.js";
 import { getData, setData, removeData, clearData, mockStorage } from "../src/utils/storage.js";
-import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration, formatSessionDuration, formatCleanTime } from "../src/utils/time.js";
-import { splitSessionByDay, recordSessionUsage, getDailyUsage } from "../src/background/usage-tracker.js";
+import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration, formatSessionDuration, formatCleanTime, splitSessionByDay } from "../src/utils/time.js";
+import { recordSessionUsage, getDailyUsage, recordFirstOpened } from "../src/background/usage-tracker.js";
 import { handleTransition, getActiveSession, endActiveSession } from "../src/background/session-tracker.js";
 
 async function runTests() {
@@ -165,7 +165,25 @@ async function runTests() {
 
   console.log("✅ usage-tracker.js persistence tests passed.");
 
-  // 6. Test Session Tracker lifecycle transitions
+  // 6. Test Started Today (firstOpenedAt) persistence
+  console.log("\nTesting recordFirstOpened...");
+  await clearData();
+  const tOpened = new Date("2026-08-12T04:30:00").getTime();
+  await recordFirstOpened("chatgpt", tOpened);
+
+  let usageData = await getDailyUsage();
+  assert.strictEqual(usageData["2026-08-12"]["chatgpt"].firstOpenedAt, tOpened);
+
+  // Attempt to overwrite with a later time
+  const tOpenedLater = new Date("2026-08-12T08:00:00").getTime();
+  await recordFirstOpened("chatgpt", tOpenedLater);
+
+  usageData = await getDailyUsage();
+  // Must remain unchanged!
+  assert.strictEqual(usageData["2026-08-12"]["chatgpt"].firstOpenedAt, tOpened);
+  console.log("✅ recordFirstOpened tests passed.");
+
+  // 7. Test Session Tracker lifecycle transitions
   console.log("\nTesting session-tracker.js lifecycle transitions...");
   await clearData();
   await endActiveSession(); // Ensure starting from a clean state
