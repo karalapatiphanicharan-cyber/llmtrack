@@ -8,6 +8,7 @@
 </head>
 <body>
   <div class="popup-container">
+    <!-- Header -->
     <header class="popup-header">
       <div class="logo-area">
         <span class="logo-text">LLMTrack</span>
@@ -16,76 +17,71 @@
       <p class="subtitle">AI Usage Tracker</p>
     </header>
 
+    <!-- Main Content -->
     <main class="popup-main">
-      <!-- Active Detection Card -->
-      <div class="card detection-card">
-        <h3>Current Platform</h3>
-        <div class="detection-display">
+      <!-- Current Session Section -->
+      <section class="section current-section">
+        <div class="section-header">
+          <span class="section-title">CURRENT</span>
+          <span id="detection-status" class="status-badge inactive">INACTIVE</span>
+        </div>
+
+        <div class="current-display">
           <div id="detection-indicator" class="indicator inactive"></div>
-          <span id="detected-platform" class="detected-text">No supported LLM detected</span>
+          <span id="detected-platform" class="detected-text">No supported LLM</span>
         </div>
-        <div class="engine-row">
-          <span class="engine-label">Detection Status:</span>
-          <span id="detection-status" class="engine-status inactive">Inactive</span>
-        </div>
-        <div class="engine-row">
-          <span class="engine-label">Session Started:</span>
-          <span id="session-started-time" class="status-value">-</span>
-        </div>
-        <div class="engine-row">
-          <span class="engine-label">Current Session:</span>
-          <span id="current-session-duration" class="status-value">-</span>
-        </div>
-      </div>
 
-      <div class="card status-card">
-        <div class="status-row">
-          <span class="status-label">Tracking engine:</span>
-          <span id="engine-status" class="status-value loading">Not initialized</span>
+        <div class="detail-rows">
+          <div class="detail-row">
+            <span class="detail-label">Started</span>
+            <span id="session-started-time" class="detail-value">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Session</span>
+            <span id="current-session-duration" class="detail-value">-</span>
+          </div>
         </div>
-        <div class="status-row">
-          <span class="status-label">Extension Version:</span>
-          <span class="status-value">0.2.0</span>
-        </div>
-      </div>
+      </section>
 
-      <div class="card platforms-card">
-        <h3>Today's Usage</h3>
+      <!-- Today's Usage Section -->
+      <section class="section today-section">
+        <div class="section-header">
+          <span class="section-title">TODAY</span>
+        </div>
+
         <ul class="platform-list">
-          <li class="platform-item">
-            <span class="platform-indicator chatgpt"></span>
-            <div class="platform-details">
+          <li class="platform-row">
+            <div class="platform-left">
+              <span class="dot chatgpt"></span>
               <span class="platform-name">ChatGPT</span>
-              <span class="platform-domain">chatgpt.com</span>
             </div>
-            <span id="usage-chatgpt" class="platform-usage">0s</span>
+            <span id="usage-chatgpt" class="platform-time">0s</span>
           </li>
-          <li class="platform-item">
-            <span class="platform-indicator gemini"></span>
-            <div class="platform-details">
+          <li class="platform-row">
+            <div class="platform-left">
+              <span class="dot gemini"></span>
               <span class="platform-name">Gemini</span>
-              <span class="platform-domain">gemini.google.com</span>
             </div>
-            <span id="usage-gemini" class="platform-usage">0s</span>
+            <span id="usage-gemini" class="platform-time">0s</span>
           </li>
-          <li class="platform-item">
-            <span class="platform-indicator claude"></span>
-            <div class="platform-details">
+          <li class="platform-row">
+            <div class="platform-left">
+              <span class="dot claude"></span>
               <span class="platform-name">Claude</span>
-              <span class="platform-domain">claude.ai</span>
             </div>
-            <span id="usage-claude" class="platform-usage">0s</span>
+            <span id="usage-claude" class="platform-time">0s</span>
           </li>
         </ul>
-      </div>
-
-      <div class="info-banner">
-        <p><strong>Privacy Promise:</strong> Conversation content, prompts, and responses are never tracked or read.</p>
-      </div>
+      </section>
     </main>
 
+    <!-- Footer -->
     <footer class="popup-footer">
-      <p>© 2025 LLMTrack Foundation</p>
+      <div class="footer-status">
+        <span class="footer-label">Tracking Engine</span>
+        <span id="engine-status" class="engine-badge active">ACTIVE</span>
+      </div>
+      <p class="privacy-promise">Conversation content, prompts, and responses are never tracked.</p>
     </footer>
   </div>
 

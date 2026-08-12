@@ -1,7 +1,7 @@
 import assert from "assert";
 import { detectLLM } from "../src/utils/llmDetector.js";
 import { getData, setData, removeData, clearData, mockStorage } from "../src/utils/storage.js";
-import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration } from "../src/utils/time.js";
+import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration, formatSessionDuration, formatCleanTime } from "../src/utils/time.js";
 import { splitSessionByDay, recordSessionUsage, getDailyUsage } from "../src/background/usage-tracker.js";
 import { handleTransition, getActiveSession, endActiveSession } from "../src/background/session-tracker.js";
 
@@ -61,10 +61,36 @@ async function runTests() {
   const todayStr = getLocalDateString();
   assert.match(todayStr, /^\d{4}-\d{2}-\d{2}$/);
 
+  // Original format duration
   assert.strictEqual(formatDuration(0), "0s");
   assert.strictEqual(formatDuration(1000), "1s");
   assert.strictEqual(formatDuration(65000), "1m 5s");
   assert.strictEqual(formatDuration(3665000), "1h 1m 5s");
+
+  // New clean session duration formatter
+  assert.strictEqual(formatSessionDuration(0), "<1 min");
+  assert.strictEqual(formatSessionDuration(59000), "<1 min");
+  assert.strictEqual(formatSessionDuration(60000), "1 min");
+  assert.strictEqual(formatSessionDuration(119000), "1 min");
+  assert.strictEqual(formatSessionDuration(120000), "2 min");
+  assert.strictEqual(formatSessionDuration(3540000), "59 min");
+  assert.strictEqual(formatSessionDuration(3600000), "1 hr");
+  assert.strictEqual(formatSessionDuration(3900000), "1 hr 05 min");
+  assert.strictEqual(formatSessionDuration(9000000), "2 hr 30 min");
+
+  // New clean time formatter (local h:mm A)
+  // We can construct dates to test AM/PM boundary formatting
+  const amDate = new Date("2026-08-12T06:38:00").getTime();
+  assert.strictEqual(formatCleanTime(amDate), "6:38 AM");
+
+  const pmDate = new Date("2026-08-12T18:38:36").getTime();
+  assert.strictEqual(formatCleanTime(pmDate), "6:38 PM");
+
+  const midnightDate = new Date("2026-08-12T00:05:00").getTime();
+  assert.strictEqual(formatCleanTime(midnightDate), "12:05 AM");
+
+  const noonDate = new Date("2026-08-12T12:00:00").getTime();
+  assert.strictEqual(formatCleanTime(noonDate), "12:00 PM");
 
   console.log("✅ time.js tests passed.");
 

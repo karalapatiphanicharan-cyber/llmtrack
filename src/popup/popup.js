@@ -4,7 +4,7 @@
  * and active LLM detection state.
  */
 
-import { formatDuration, getLocalDateString } from "../utils/time.js";
+import { formatSessionDuration, formatCleanTime, getLocalDateString } from "../utils/time.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const engineStatusElement = document.getElementById("engine-status");
@@ -20,11 +20,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     claude: document.getElementById("usage-claude")
   };
 
-  // State to calculate running session duration locally (without owning the source timer)
+  // Central state memory
   let activeSessionState = null;
   let accumulatedDailyUsage = {};
-
-  // Tick interval to update UI every second
   let updateIntervalId = null;
 
   // Attempt to query the background service worker
@@ -39,14 +37,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (response && response.success && response.data) {
-          engineStatusElement.textContent = response.data.trackingEngine;
-          engineStatusElement.className = "status-value active";
+          if (engineStatusElement) {
+            engineStatusElement.textContent = "ACTIVE";
+            engineStatusElement.className = "engine-badge active";
+          }
         } else {
           setOfflineStatus(engineStatusElement);
         }
       });
 
-      // Fetch dynamic state and start interval
+      // Fetch dynamic state immediately and kick off UI interval
       await fetchAndUpdateState();
       updateIntervalId = setInterval(tickUI, 1000);
 
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Fetches the central states from background worker
+   * Fetches latest state from background service worker
    */
   async function fetchAndUpdateState() {
     return new Promise((resolve) => {
@@ -97,8 +97,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Updates elements representing stored daily usage.
-   * If a platform is currently active, displays stored usage + active session usage.
+   * Render Today's usage total.
+   * If a platform is active, we add the live running elapsed time to its display dynamically.
    */
   function updateUsageDisplay() {
     const todayStr = getLocalDateString();
@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         totalSeconds = todayData[platform].totalUsageSeconds || 0;
       }
 
-      // If this platform is currently running, add the live running elapsed time
+      // Add live running time if active
       if (activeSessionState && activeSessionState.active && activeSessionState.platform === platform && activeSessionState.sessionStartedAt) {
         const elapsedMs = Date.now() - activeSessionState.sessionStartedAt;
         const liveSeconds = Math.floor(elapsedMs / 1000);
@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
 
-      const formatted = formatDuration(totalSeconds * 1000);
+      const formatted = formatSessionDuration(totalSeconds * 1000);
       if (usageElements[platform]) {
         usageElements[platform].textContent = formatted;
       }
@@ -128,13 +128,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Periodic tick to calculate elapsed times on the fly for active session.
+   * Dynamic local interval UI ticks to update running session durations
    */
   function tickUI() {
     if (activeSessionState && activeSessionState.active && activeSessionState.sessionStartedAt) {
       const elapsedMs = Date.now() - activeSessionState.sessionStartedAt;
       if (currentDurationElement) {
-        currentDurationElement.textContent = formatDuration(elapsedMs);
+        currentDurationElement.textContent = formatSessionDuration(elapsedMs);
       }
       updateUsageDisplay();
     } else {
@@ -146,17 +146,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function setOfflineStatus(element) {
     if (element) {
-      element.textContent = "Offline (Not running)";
-      element.className = "status-value";
-      element.style.color = "#ef4444";
+      element.textContent = "OFFLINE";
+      element.className = "engine-badge inactive";
     }
   }
 
   function setMockStatus(element) {
     if (element) {
-      element.textContent = "Mock Sandbox Mode";
-      element.className = "status-value active";
-      element.style.color = "#3b82f6";
+      element.textContent = "SANDBOX";
+      element.className = "engine-badge active";
     }
   }
 
@@ -165,11 +163,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       indicatorElement.className = "indicator inactive";
     }
     if (platformTextElement) {
-      platformTextElement.textContent = "No supported LLM detected";
+      platformTextElement.textContent = "No supported LLM";
     }
     if (detectionStatusElement) {
-      detectionStatusElement.textContent = "Inactive";
-      detectionStatusElement.className = "engine-status inactive";
+      detectionStatusElement.textContent = "INACTIVE";
+      detectionStatusElement.className = "status-badge inactive";
     }
     if (sessionStartedElement) {
       sessionStartedElement.textContent = "-";
@@ -184,17 +182,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       indicatorElement.className = "indicator chatgpt";
     }
     if (platformTextElement) {
-      platformTextElement.textContent = "ChatGPT (Mock)";
+      platformTextElement.textContent = "ChatGPT";
     }
     if (detectionStatusElement) {
-      detectionStatusElement.textContent = "Active";
-      detectionStatusElement.className = "engine-status active";
+      detectionStatusElement.textContent = "ACTIVE";
+      detectionStatusElement.className = "status-badge active";
     }
     if (sessionStartedElement) {
-      sessionStartedElement.textContent = "Mock Started";
+      sessionStartedElement.textContent = "6:38 PM";
     }
     if (currentDurationElement) {
-      currentDurationElement.textContent = "1m 30s";
+      currentDurationElement.textContent = "14 min";
+    }
+    if (usageElements.chatgpt) {
+      usageElements.chatgpt.textContent = "48 min";
+    }
+    if (usageElements.gemini) {
+      usageElements.gemini.textContent = "12 min";
+    }
+    if (usageElements.claude) {
+      usageElements.claude.textContent = "7 min";
     }
   }
 
@@ -204,7 +211,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // Format platform name prettily
     const platformNameMap = {
       chatgpt: "ChatGPT",
       gemini: "Gemini",
@@ -220,14 +226,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       platformTextElement.textContent = prettyName;
     }
     if (detectionStatusElement) {
-      detectionStatusElement.textContent = "Active";
-      detectionStatusElement.className = "engine-status active";
+      detectionStatusElement.textContent = "ACTIVE";
+      detectionStatusElement.className = "status-badge active";
     }
 
     if (state.sessionStartedAt) {
-      const startTimeDate = new Date(state.sessionStartedAt);
       if (sessionStartedElement) {
-        sessionStartedElement.textContent = startTimeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        sessionStartedElement.textContent = formatCleanTime(state.sessionStartedAt);
       }
     } else {
       if (sessionStartedElement) {
