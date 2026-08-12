@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const detectionStatusElement = document.getElementById("detection-status");
   const startedTodayElement = document.getElementById("session-started-today");
   const currentSessionElement = document.getElementById("session-current-start");
+  const currentCardElement = document.getElementById("current-card");
 
   const usageElements = {
     chatgpt: document.getElementById("usage-chatgpt"),
@@ -170,6 +171,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (currentSessionElement) {
       currentSessionElement.textContent = "-";
     }
+    if (currentCardElement) {
+      currentCardElement.className = "detail-rows";
+    }
   }
 
   function setMockPlatform() {
@@ -188,6 +192,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (currentSessionElement) {
       currentSessionElement.textContent = "8:03 PM";
+    }
+    if (currentCardElement) {
+      currentCardElement.className = "detail-rows active-chatgpt";
     }
     if (usageElements.chatgpt) {
       usageElements.chatgpt.textContent = "28 min";
@@ -223,6 +230,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (detectionStatusElement) {
       detectionStatusElement.textContent = "ACTIVE";
       detectionStatusElement.className = "status-badge active";
+    }
+
+    // Apply platform-specific active glow/tint classes
+    if (currentCardElement) {
+      currentCardElement.className = `detail-rows active-${state.platform}`;
     }
 
     // 1. Started Today (firstOpenedAt)

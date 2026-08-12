@@ -11,10 +11,15 @@
     <!-- Header -->
     <header class="popup-header">
       <div class="logo-area">
-        <span class="logo-text">LLMTrack</span>
-        <span class="badge">Phase 2</span>
+        <div class="brand-left">
+          <img src="../../assets/icons/icon-128.png" alt="LLMTrack Logo" class="product-logo">
+          <div class="brand-text">
+            <span class="logo-text">LLMTrack</span>
+            <p class="subtitle">AI Usage Intelligence</p>
+          </div>
+        </div>
+        <span class="badge">● Phase 2</span>
       </div>
-      <p class="subtitle">AI Usage Tracker</p>
     </header>
 
     <!-- Main Content -->
@@ -22,7 +27,7 @@
       <!-- Current Session Section -->
       <section class="section current-section">
         <div class="section-header">
-          <span class="section-title">CURRENT</span>
+          <span class="section-title">CURRENT SESSION</span>
           <span id="detection-status" class="status-badge inactive">INACTIVE</span>
         </div>
 
@@ -31,7 +36,7 @@
           <span id="detected-platform" class="detected-text">No supported LLM</span>
         </div>
 
-        <div class="detail-rows">
+        <div id="current-card" class="detail-rows">
           <div class="detail-row">
             <span class="detail-label">Started Today</span>
             <span id="session-started-today" class="detail-value">-</span>
@@ -78,10 +83,13 @@
     <!-- Footer -->
     <footer class="popup-footer">
       <div class="footer-status">
-        <span class="footer-label">Tracking Engine</span>
+        <div class="footer-status-left">
+          <span class="footer-dot active"></span>
+          <span class="footer-label">TRACKING ENGINE</span>
+        </div>
         <span id="engine-status" class="engine-badge active">ACTIVE</span>
       </div>
-      <p class="privacy-promise">Your conversations are never read or stored.</p>
+      <p class="privacy-promise">Privacy-first · Conversations are never read or stored.</p>
     </footer>
   </div>
 
