@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLMTrack</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo-area">
+        <span class="logo-text">LLMTrack</span>
+        <span class="badge">Phase 0</span>
+      </div>
+      <p class="subtitle">AI Usage Tracker</p>
+    </header>
+
+    <main class="popup-main">
+      <div class="card status-card">
+        <div class="status-row">
+          <span class="status-label">Tracking engine:</span>
+          <span id="engine-status" class="status-value loading">Not initialized</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Extension Version:</span>
+          <span class="status-value">0.1.0</span>
+        </div>
+      </div>
+
+      <div class="card platforms-card">
+        <h3>Supported Platforms</h3>
+        <ul class="platform-list">
+          <li class="platform-item">
+            <span class="platform-indicator chatgpt"></span>
+            <span class="platform-name">ChatGPT</span>
+            <span class="platform-domain">chatgpt.com</span>
+          </li>
+          <li class="platform-item">
+            <span class="platform-indicator gemini"></span>
+            <span class="platform-name">Gemini</span>
+            <span class="platform-domain">gemini.google.com</span>
+          </li>
+          <li class="platform-item">
+            <span class="platform-indicator claude"></span>
+            <span class="platform-name">Claude</span>
+            <span class="platform-domain">claude.ai</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="info-banner">
+        <p><strong>Privacy Promise:</strong> Conversation content, prompts, and responses are never tracked or read.</p>
+      </div>
+    </main>
+
+    <footer class="popup-footer">
+      <p>© 2025 LLMTrack Foundation</p>
+    </footer>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
