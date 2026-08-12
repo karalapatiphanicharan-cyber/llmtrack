@@ -32,7 +32,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  min-height: 380px;
+  min-height: 480px;
 }
 
 /* Header */
@@ -84,10 +84,86 @@ body {
   margin-bottom: 12px;
 }
 
+/* Detection Card */
+.detection-card h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.detection-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.indicator.inactive {
+  background-color: #94a3b8;
+}
+
+.indicator.chatgpt {
+  background-color: var(--accent-chatgpt);
+}
+
+.indicator.gemini {
+  background-color: var(--accent-gemini);
+}
+
+.indicator.claude {
+  background-color: var(--accent-claude);
+}
+
+.detected-text {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.engine-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.engine-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.engine-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.engine-status.active {
+  color: var(--success-color);
+}
+
+.engine-status.inactive {
+  color: var(--text-secondary);
+}
+
+/* Status Card */
 .status-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .status-row {
@@ -97,13 +173,13 @@ body {
 }
 
 .status-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
 .status-value {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -117,7 +193,7 @@ body {
 
 /* Supported Platforms Card */
 .platforms-card h3 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;

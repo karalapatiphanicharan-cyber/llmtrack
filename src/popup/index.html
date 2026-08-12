@@ -11,12 +11,25 @@
     <header class="popup-header">
       <div class="logo-area">
         <span class="logo-text">LLMTrack</span>
-        <span class="badge">Phase 0</span>
+        <span class="badge">Phase 1</span>
       </div>
       <p class="subtitle">AI Usage Tracker</p>
     </header>
 
     <main class="popup-main">
+      <!-- Active Detection Card -->
+      <div class="card detection-card">
+        <h3>Current Platform</h3>
+        <div class="detection-display">
+          <div id="detection-indicator" class="indicator inactive"></div>
+          <span id="detected-platform" class="detected-text">No supported LLM detected</span>
+        </div>
+        <div class="engine-row">
+          <span class="engine-label">Detection Status:</span>
+          <span id="detection-status" class="engine-status inactive">Inactive</span>
+        </div>
+      </div>
+
       <div class="card status-card">
         <div class="status-row">
           <span class="status-label">Tracking engine:</span>
