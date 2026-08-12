@@ -5,42 +5,40 @@
  */
 
 import { getData, setData } from "../utils/storage.js";
-import { getLocalDateString } from "../utils/time.js";
+import { getLocalDateString, splitSessionByDay } from "../utils/time.js";
 
 /**
- * Splits a session crossing midnight boundaries into segments for each local calendar date.
- * @param {number} startTime - Start timestamp in ms.
- * @param {number} endTime - End timestamp in ms.
- * @returns {Array<{date: string, durationMs: number}>} Segments of the session.
+ * Records the first opened timestamp of the day for a platform if it doesn't already exist.
+ * Keeps "Started Today" timestamp unchanged for the rest of the day.
+ * @param {string} platform - The LLM platform id.
+ * @param {number} timestamp - The current epoch timestamp in ms.
+ * @returns {Promise<object>} The updated daily usage object.
  */
-export function splitSessionByDay(startTime, endTime) {
-  if (!startTime || !endTime || endTime <= startTime) {
-    return [];
+export async function recordFirstOpened(platform, timestamp) {
+  if (!platform || !timestamp) {
+    const storageData = await getData("dailyUsage");
+    return storageData.dailyUsage || {};
   }
 
-  const segments = [];
-  let currentStart = startTime;
+  const date = getLocalDateString(new Date(timestamp));
+  const storageData = await getData("dailyUsage");
+  const dailyUsage = storageData.dailyUsage || {};
 
-  while (currentStart < endTime) {
-    const d = new Date(currentStart);
-    // Get the timestamp of the next midnight in local timezone
-    const nextMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0, 0);
-    const nextMidnightTime = nextMidnight.getTime();
-
-    if (endTime < nextMidnightTime) {
-      const dateStr = getLocalDateString(new Date(currentStart));
-      const durationMs = endTime - currentStart;
-      segments.push({ date: dateStr, durationMs });
-      break;
-    } else {
-      const dateStr = getLocalDateString(new Date(currentStart));
-      const durationMs = nextMidnightTime - currentStart;
-      segments.push({ date: dateStr, durationMs });
-      currentStart = nextMidnightTime;
-    }
+  if (!dailyUsage[date]) {
+    dailyUsage[date] = {};
+  }
+  if (!dailyUsage[date][platform]) {
+    dailyUsage[date][platform] = { totalUsageSeconds: 0 };
   }
 
-  return segments;
+  // If firstOpenedAt is not set, set it now. If it's already set, do NOT overwrite it!
+  if (!dailyUsage[date][platform].firstOpenedAt) {
+    dailyUsage[date][platform].firstOpenedAt = timestamp;
+    console.log(`[LLMTrack] Record firstOpenedAt for ${platform}: ${timestamp} (${date})`);
+    await setData({ dailyUsage });
+  }
+
+  return dailyUsage;
 }
 
 /**

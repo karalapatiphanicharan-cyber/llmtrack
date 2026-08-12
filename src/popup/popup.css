@@ -1,11 +1,13 @@
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border-color: #f1f5f9;
-  --primary-color: #4f46e5;
+  --bg-primary: #0b0f19;
+  --bg-secondary: #121826;
+  --bg-tertiary: #1b2336;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #1e293b;
+  --primary-color: #6366f1; /* purple/indigo highlight */
+  --primary-hover: #4f46e5;
   --success-color: #10b981;
   --accent-chatgpt: #10a37f;
   --accent-gemini: #1a73e8;
@@ -51,7 +53,7 @@ body {
 .logo-text {
   font-size: 15px;
   font-weight: 700;
-  color: var(--primary-color);
+  color: #a5b4fc; /* subtle indigo text */
   letter-spacing: -0.3px;
 }
 
@@ -103,13 +105,13 @@ body {
 }
 
 .status-badge.active {
-  background-color: #ecfdf5;
+  background-color: rgba(16, 185, 129, 0.1);
   color: var(--success-color);
 }
 
 .status-badge.inactive {
-  background-color: #f1f5f9;
-  color: var(--text-muted);
+  background-color: rgba(100, 116, 139, 0.1);
+  color: var(--text-secondary);
 }
 
 /* Current Display Row */
@@ -128,19 +130,22 @@ body {
 }
 
 .indicator.inactive {
-  background-color: #cbd5e1;
+  background-color: var(--text-muted);
 }
 
 .indicator.chatgpt {
   background-color: var(--accent-chatgpt);
+  box-shadow: 0 0 6px var(--accent-chatgpt);
 }
 
 .indicator.gemini {
   background-color: var(--accent-gemini);
+  box-shadow: 0 0 6px var(--accent-gemini);
 }
 
 .indicator.claude {
   background-color: var(--accent-claude);
+  box-shadow: 0 0 6px var(--accent-claude);
 }
 
 .detected-text {
@@ -154,6 +159,7 @@ body {
   flex-direction: column;
   gap: 4px;
   background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 6px 8px;
 }
@@ -172,6 +178,7 @@ body {
 .detail-value {
   font-size: 11px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* Today Section Platform Rows */
@@ -187,6 +194,7 @@ body {
   justify-content: space-between;
   align-items: center;
   background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 6px 8px;
 }
@@ -218,12 +226,13 @@ body {
 .platform-name {
   font-size: 12px;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .platform-time {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #a5b4fc; /* subtle indigo color for the totals */
 }
 
 /* Footer Section */
@@ -255,12 +264,12 @@ body {
 }
 
 .engine-badge.active {
-  background-color: #ecfdf5;
+  background-color: rgba(16, 185, 129, 0.1);
   color: var(--success-color);
 }
 
 .engine-badge.inactive {
-  background-color: #fef2f2;
+  background-color: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
 

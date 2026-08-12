@@ -11,8 +11,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const indicatorElement = document.getElementById("detection-indicator");
   const platformTextElement = document.getElementById("detected-platform");
   const detectionStatusElement = document.getElementById("detection-status");
-  const sessionStartedElement = document.getElementById("session-started-time");
-  const currentDurationElement = document.getElementById("current-session-duration");
+  const startedTodayElement = document.getElementById("session-started-today");
+  const currentSessionElement = document.getElementById("session-current-start");
 
   const usageElements = {
     chatgpt: document.getElementById("usage-chatgpt"),
@@ -77,9 +77,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (responseActive && responseActive.success && responseActive.data) {
           activeSessionState = responseActive.data;
-          updatePlatformUI(activeSessionState);
         } else {
-          setUnsupportedPlatform();
+          activeSessionState = null;
         }
 
         // 3. Get Today's Daily Usage
@@ -89,6 +88,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           } else {
             accumulatedDailyUsage = {};
           }
+
+          updatePlatformUI(activeSessionState);
           updateUsageDisplay();
           resolve();
         });
@@ -130,19 +131,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Dynamic local interval UI ticks to update running session durations
+   * Dynamic local interval UI ticks to update running session durations in Daily Usage list
    */
   function tickUI() {
     if (activeSessionState && activeSessionState.active && activeSessionState.sessionStartedAt) {
-      const elapsedMs = Date.now() - activeSessionState.sessionStartedAt;
-      if (currentDurationElement) {
-        currentDurationElement.textContent = formatSessionDuration(elapsedMs);
-      }
       updateUsageDisplay();
-    } else {
-      if (currentDurationElement) {
-        currentDurationElement.textContent = "-";
-      }
     }
   }
 
@@ -155,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function setMockStatus(element) {
     if (element) {
-      element.textContent = "SANDBOX";
+      element.textContent = "ACTIVE";
       element.className = "engine-badge active";
     }
   }
@@ -171,11 +164,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       detectionStatusElement.textContent = "INACTIVE";
       detectionStatusElement.className = "status-badge inactive";
     }
-    if (sessionStartedElement) {
-      sessionStartedElement.textContent = "-";
+    if (startedTodayElement) {
+      startedTodayElement.textContent = "-";
     }
-    if (currentDurationElement) {
-      currentDurationElement.textContent = "-";
+    if (currentSessionElement) {
+      currentSessionElement.textContent = "-";
     }
   }
 
@@ -190,20 +183,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       detectionStatusElement.textContent = "ACTIVE";
       detectionStatusElement.className = "status-badge active";
     }
-    if (sessionStartedElement) {
-      sessionStartedElement.textContent = "6:38 PM";
+    if (startedTodayElement) {
+      startedTodayElement.textContent = "4:30 PM";
     }
-    if (currentDurationElement) {
-      currentDurationElement.textContent = "14 min";
+    if (currentSessionElement) {
+      currentSessionElement.textContent = "8:03 PM";
     }
     if (usageElements.chatgpt) {
-      usageElements.chatgpt.textContent = "48 min";
+      usageElements.chatgpt.textContent = "28 min";
     }
     if (usageElements.gemini) {
-      usageElements.gemini.textContent = "12 min";
+      usageElements.gemini.textContent = "<1 min";
     }
     if (usageElements.claude) {
-      usageElements.claude.textContent = "7 min";
+      usageElements.claude.textContent = "<1 min";
     }
   }
 
@@ -232,14 +225,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       detectionStatusElement.className = "status-badge active";
     }
 
-    if (state.sessionStartedAt) {
-      if (sessionStartedElement) {
-        sessionStartedElement.textContent = formatCleanTime(state.sessionStartedAt);
-      }
-    } else {
-      if (sessionStartedElement) {
-        sessionStartedElement.textContent = "-";
-      }
+    // 1. Started Today (firstOpenedAt)
+    const todayStr = getLocalDateString();
+    const todayData = accumulatedDailyUsage[todayStr] || {};
+    let firstOpenedAt = null;
+    if (todayData[state.platform]) {
+      firstOpenedAt = todayData[state.platform].firstOpenedAt;
+    }
+
+    // Fallback: if firstOpenedAt is not yet in storage, use the active session started time
+    if (!firstOpenedAt) {
+      firstOpenedAt = state.sessionStartedAt;
+    }
+
+    if (startedTodayElement) {
+      startedTodayElement.textContent = formatCleanTime(firstOpenedAt);
+    }
+
+    // 2. Current Session (sessionStartedAt)
+    if (currentSessionElement) {
+      currentSessionElement.textContent = formatCleanTime(state.sessionStartedAt);
     }
   }
 });
