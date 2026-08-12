@@ -4,9 +4,16 @@
  * and active LLM detection state.
  */
 
-import { formatSessionDuration, formatCleanTime, getLocalDateString, splitSessionByDay } from "../utils/time.js";
+import {
+  formatSessionDuration,
+  formatCleanTime,
+  getLocalDateString,
+  splitSessionByDay,
+  getCurrentWeekDates
+} from "../utils/time.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Elements
   const engineStatusElement = document.getElementById("engine-status");
   const indicatorElement = document.getElementById("detection-indicator");
   const platformTextElement = document.getElementById("detected-platform");
@@ -15,18 +22,53 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currentSessionElement = document.getElementById("session-current-start");
   const currentCardElement = document.getElementById("current-card");
 
+  // Navigation toggle buttons & views
+  const toggleBtn = document.getElementById("history-toggle-btn");
+  const btnText = document.getElementById("nav-btn-text");
+  const btnIcon = document.getElementById("nav-btn-icon");
+  const overviewView = document.getElementById("overview-view");
+  const historyView = document.getElementById("history-view");
+
+  // History Elements
+  const historyRangeElement = document.getElementById("history-date-range");
+  const weeklyTotalValueElement = document.getElementById("weekly-total-value");
+  const mostUsedElement = document.getElementById("most-used-platform");
+
   const usageElements = {
     chatgpt: document.getElementById("usage-chatgpt"),
     gemini: document.getElementById("usage-gemini"),
     claude: document.getElementById("usage-claude")
   };
 
-  // Central state memory
+  // State
   let activeSessionState = null;
   let accumulatedDailyUsage = {};
+  let isHistoryView = false;
   let updateIntervalId = null;
 
-  // Attempt to query the background service worker
+  // Set toggle listener
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      isHistoryView = !isHistoryView;
+      if (isHistoryView) {
+        // Switch to History
+        overviewView.classList.add("hidden");
+        historyView.classList.remove("hidden");
+        btnText.textContent = "OVERVIEW";
+        btnIcon.textContent = "←";
+        renderHistoryView();
+      } else {
+        // Switch to Overview
+        historyView.classList.add("hidden");
+        overviewView.classList.remove("hidden");
+        btnText.textContent = "7 DAYS";
+        btnIcon.textContent = "◷";
+        updateUsageDisplay();
+      }
+    });
+  }
+
+  // Query background service worker
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
     try {
       // 1. Get Tracking Engine Status
@@ -91,7 +133,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
 
           updatePlatformUI(activeSessionState);
-          updateUsageDisplay();
+          if (isHistoryView) {
+            renderHistoryView();
+          } else {
+            updateUsageDisplay();
+          }
           resolve();
         });
       });
@@ -132,11 +178,149 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Dynamic local interval UI ticks to update running session durations in Daily Usage list
+   * Renders the 7-Day History View
+   */
+  function renderHistoryView() {
+    const todayStr = getLocalDateString();
+    const currentWeekDates = getCurrentWeekDates(); // Monday -> Sunday dates
+
+    // 1. Format and display date range (e.g. AUG 10 — AUG 16)
+    if (historyRangeElement && currentWeekDates.length === 7) {
+      const monStr = currentWeekDates[0];
+      const sunStr = currentWeekDates[6];
+      historyRangeElement.textContent = formatWeekRange(monStr, sunStr);
+    }
+
+    // 2. Sum up daily and platform totals
+    let weeklyTotalSeconds = 0;
+    const platformWeeklySeconds = { chatgpt: 0, gemini: 0, claude: 0 };
+    const dailyTotalSeconds = [0, 0, 0, 0, 0, 0, 0]; // MON -> SUN totals
+
+    currentWeekDates.forEach((dateStr, index) => {
+      const dayData = accumulatedDailyUsage[dateStr] || {};
+      const platforms = ["chatgpt", "gemini", "claude"];
+
+      platforms.forEach(platform => {
+        let seconds = 0;
+        if (dayData[platform]) {
+          seconds = dayData[platform].totalUsageSeconds || 0;
+        }
+
+        // Add live running time if active and matching this date
+        if (activeSessionState && activeSessionState.active && activeSessionState.platform === platform && activeSessionState.sessionStartedAt) {
+          const segments = splitSessionByDay(activeSessionState.sessionStartedAt, Date.now());
+          const matchSegment = segments.find(s => s.date === dateStr);
+          if (matchSegment) {
+            seconds += Math.floor(matchSegment.durationMs / 1000);
+          }
+        }
+
+        dailyTotalSeconds[index] += seconds;
+        platformWeeklySeconds[platform] += seconds;
+        weeklyTotalSeconds += seconds;
+      });
+    });
+
+    // 3. Render Weekly Total
+    if (weeklyTotalValueElement) {
+      weeklyTotalValueElement.textContent = formatSessionDuration(weeklyTotalSeconds * 1000);
+    }
+
+    // 4. Render Day Rows
+    const maxDaySeconds = Math.max(...dailyTotalSeconds);
+
+    currentWeekDates.forEach((dateStr, index) => {
+      const dayTotalSec = dailyTotalSeconds[index];
+      const row = document.getElementById(`day-row-${index}`);
+      const tag = row ? row.querySelector(".day-tag") : null;
+      const bar = document.getElementById(`bar-${index}`);
+      const valSpan = document.getElementById(`day-val-${index}`);
+
+      if (!row) return;
+
+      // Reset styles
+      row.className = "history-day-row";
+      if (tag) tag.classList.add("hidden");
+
+      if (dateStr > todayStr) {
+        // Future Day
+        if (valSpan) valSpan.textContent = "—";
+        if (bar) bar.style.width = "0%";
+      } else {
+        // Today or Completed Day
+        if (dateStr === todayStr) {
+          row.classList.add("today-highlight");
+          if (tag) tag.classList.remove("hidden");
+        }
+
+        if (dayTotalSec === 0) {
+          if (valSpan) valSpan.textContent = "0 min";
+          if (bar) bar.style.width = "0%";
+        } else {
+          if (valSpan) valSpan.textContent = formatSessionDuration(dayTotalSec * 1000);
+          if (bar && maxDaySeconds > 0) {
+            const pct = (dayTotalSec / maxDaySeconds) * 100;
+            bar.style.width = `${pct}%`;
+          }
+        }
+      }
+    });
+
+    // 5. Render Most Used Platform
+    if (mostUsedElement) {
+      let highestPlatform = "—";
+      let highestSeconds = 0;
+
+      const platforms = ["chatgpt", "gemini", "claude"];
+      platforms.forEach(p => {
+        if (platformWeeklySeconds[p] > highestSeconds) {
+          highestSeconds = platformWeeklySeconds[p];
+          highestPlatform = p;
+        }
+      });
+
+      if (highestSeconds > 0) {
+        const prettyNames = { chatgpt: "ChatGPT", gemini: "Gemini", claude: "Claude" };
+        const prettyName = prettyNames[highestPlatform] || highestPlatform;
+        mostUsedElement.textContent = `${prettyName} (${formatSessionDuration(highestSeconds * 1000)})`;
+      } else {
+        mostUsedElement.textContent = "—";
+      }
+    }
+  }
+
+  /**
+   * Helper to format week range string cleanly (e.g. "AUG 10 — AUG 16" or "AUG 31 — SEP 6")
+   */
+  function formatWeekRange(monStr, sunStr) {
+    const months = ["AUG", "SEP", "OCT", "NOV", "DEC", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL"]; // Sample maps
+    const fullMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+    const monDate = new Date(monStr + "T00:00:00");
+    const sunDate = new Date(sunStr + "T00:00:00");
+
+    const monMonth = fullMonths[monDate.getMonth()];
+    const monDay = monDate.getDate();
+    const sunMonth = fullMonths[sunDate.getMonth()];
+    const sunDay = sunDate.getDate();
+
+    if (monMonth === sunMonth) {
+      return `${monMonth} ${monDay} — ${sunDay}`;
+    } else {
+      return `${monMonth} ${monDay} — ${sunMonth} ${sunDay}`;
+    }
+  }
+
+  /**
+   * Dynamic local interval UI ticks to update running session durations
    */
   function tickUI() {
     if (activeSessionState && activeSessionState.active && activeSessionState.sessionStartedAt) {
-      updateUsageDisplay();
+      if (isHistoryView) {
+        renderHistoryView();
+      } else {
+        updateUsageDisplay();
+      }
     }
   }
 

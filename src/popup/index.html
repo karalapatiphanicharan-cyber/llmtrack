@@ -14,70 +14,177 @@
         <div class="brand-left">
           <img src="../../assets/icons/icon-128.png" alt="LLMTrack Logo" class="product-logo">
           <div class="brand-text">
-            <span class="logo-text">LLMTrack</span>
+            <div class="brand-title-row">
+              <span class="logo-text">LLMTrack</span>
+              <span class="badge">PHASE 3</span>
+            </div>
             <p class="subtitle">AI Usage Intelligence</p>
           </div>
         </div>
-        <span class="badge">● Phase 2</span>
+
+        <!-- Top-Right History Navigation Toggle -->
+        <button id="history-toggle-btn" class="nav-button">
+          <span id="nav-btn-text">7 DAYS</span>
+          <span id="nav-btn-icon" class="btn-icon">◷</span>
+        </button>
       </div>
     </header>
 
     <!-- Main Content -->
     <main class="popup-main">
-      <!-- Current Session Section -->
-      <section class="section current-section">
-        <div class="section-header">
-          <span class="section-title">CURRENT SESSION</span>
-          <span id="detection-status" class="status-badge inactive">INACTIVE</span>
-        </div>
-
-        <div class="current-display">
-          <div id="detection-indicator" class="indicator inactive"></div>
-          <span id="detected-platform" class="detected-text">No supported LLM</span>
-        </div>
-
-        <div id="current-card" class="detail-rows">
-          <div class="detail-row">
-            <span class="detail-label">Started Today</span>
-            <span id="session-started-today" class="detail-value">-</span>
+      <!-- OVERVIEW VIEW -->
+      <div id="overview-view" class="view-panel">
+        <!-- Current Session Section -->
+        <section class="section current-section">
+          <div class="section-header">
+            <span class="section-title">CURRENT SESSION</span>
+            <span id="detection-status" class="status-badge inactive">INACTIVE</span>
           </div>
-          <div class="detail-row">
-            <span class="detail-label">Current Session</span>
-            <span id="session-current-start" class="detail-value">-</span>
+
+          <div class="current-display">
+            <div id="detection-indicator" class="indicator inactive"></div>
+            <span id="detected-platform" class="detected-text">No supported LLM</span>
           </div>
-        </div>
-      </section>
 
-      <!-- Today's Usage Section -->
-      <section class="section today-section">
-        <div class="section-header">
-          <span class="section-title">TODAY</span>
-        </div>
+          <div id="current-card" class="detail-rows">
+            <div class="detail-row">
+              <span class="detail-label">Started Today</span>
+              <span id="session-started-today" class="detail-value">-</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Current Session</span>
+              <span id="session-current-start" class="detail-value">-</span>
+            </div>
+          </div>
+        </section>
 
-        <ul class="platform-list">
-          <li class="platform-row">
-            <div class="platform-left">
-              <span class="dot chatgpt"></span>
-              <span class="platform-name">ChatGPT</span>
-            </div>
-            <span id="usage-chatgpt" class="platform-time">0s</span>
-          </li>
-          <li class="platform-row">
-            <div class="platform-left">
-              <span class="dot gemini"></span>
-              <span class="platform-name">Gemini</span>
-            </div>
-            <span id="usage-gemini" class="platform-time">0s</span>
-          </li>
-          <li class="platform-row">
-            <div class="platform-left">
-              <span class="dot claude"></span>
-              <span class="platform-name">Claude</span>
-            </div>
-            <span id="usage-claude" class="platform-time">0s</span>
-          </li>
-        </ul>
-      </section>
+        <!-- Today's Usage Section -->
+        <section class="section today-section">
+          <div class="section-header">
+            <span class="section-title">TODAY</span>
+          </div>
+
+          <ul class="platform-list">
+            <li class="platform-row">
+              <div class="platform-left">
+                <span class="dot chatgpt"></span>
+                <span class="platform-name">ChatGPT</span>
+              </div>
+              <span id="usage-chatgpt" class="platform-time">0s</span>
+            </li>
+            <li class="platform-row">
+              <div class="platform-left">
+                <span class="dot gemini"></span>
+                <span class="platform-name">Gemini</span>
+              </div>
+              <span id="usage-gemini" class="platform-time">0s</span>
+            </li>
+            <li class="platform-row">
+              <div class="platform-left">
+                <span class="dot claude"></span>
+                <span class="platform-name">Claude</span>
+              </div>
+              <span id="usage-claude" class="platform-time">0s</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- 7-DAY HISTORY VIEW -->
+      <div id="history-view" class="view-panel hidden">
+        <section class="section history-section">
+          <div class="section-header">
+            <span class="section-title">7-DAY HISTORY</span>
+            <span id="history-date-range" class="status-badge active">AUG 10 — AUG 16</span>
+          </div>
+
+          <!-- Weekly Total Surface -->
+          <div class="weekly-total-card">
+            <span class="weekly-total-label">WEEKLY TOTAL</span>
+            <span id="weekly-total-value" class="weekly-total-value">0 min</span>
+          </div>
+
+          <!-- 7-Days List -->
+          <ul class="history-list">
+            <li class="history-day-row" id="day-row-0">
+              <div class="day-row-left">
+                <span class="day-abbr">MON</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-0" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-0" class="day-time">—</span>
+              </div>
+            </li>
+            <li class="history-day-row" id="day-row-1">
+              <div class="day-row-left">
+                <span class="day-abbr">TUE</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-1" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-1" class="day-time">—</span>
+              </div>
+            </li>
+            <li class="history-day-row" id="day-row-2">
+              <div class="day-row-left">
+                <span class="day-abbr">WED</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-2" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-2" class="day-time">—</span>
+              </div>
+            </li>
+            <li class="history-day-row" id="day-row-3">
+              <div class="day-row-left">
+                <span class="day-abbr">THU</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-3" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-3" class="day-time">—</span>
+              </div>
+            </li>
+            <li class="history-day-row" id="day-row-4">
+              <div class="day-row-left">
+                <span class="day-abbr">FRI</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-4" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-4" class="day-time">—</span>
+              </div>
+            </li>
+            <li class="history-day-row" id="day-row-5">
+              <div class="day-row-left">
+                <span class="day-abbr">SAT</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-5" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-5" class="day-time">—</span>
+              </div>
+            </li>
+            <li class="history-day-row" id="day-row-6">
+              <div class="day-row-left">
+                <span class="day-abbr">SUN</span>
+                <span class="day-tag hidden">TODAY</span>
+              </div>
+              <div class="day-row-right">
+                <div class="bar-container"><div id="bar-6" class="bar" style="width: 0%"></div></div>
+                <span id="day-val-6" class="day-time">—</span>
+              </div>
+            </li>
+          </ul>
+
+          <!-- Premium Most Used Platform Breakdown -->
+          <div class="history-summary-box">
+            <span class="summary-label">MOST USED</span>
+            <span id="most-used-platform" class="summary-value">—</span>
+          </div>
+        </section>
+      </div>
     </main>
 
     <!-- Footer -->
