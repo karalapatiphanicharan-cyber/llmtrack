@@ -5,7 +5,33 @@
  */
 
 import { getData, setData } from "../utils/storage.js";
-import { getLocalDateString, splitSessionByDay } from "../utils/time.js";
+import { getLocalDateString, splitSessionByDay, getCurrentWeekDates } from "../utils/time.js";
+
+/**
+ * Clean up/remove daily usage records older than the current week's Monday to maintain storage efficiency.
+ * Ensures the active history contains only the current week's dates (Monday -> Sunday).
+ * @returns {Promise<object>} The cleaned daily usage object.
+ */
+export async function performWeeklyRolloverCleanup() {
+  const currentWeekDates = getCurrentWeekDates();
+  const storageData = await getData("dailyUsage");
+  const dailyUsage = storageData.dailyUsage || {};
+
+  let changed = false;
+  // Remove any keys that are older than current week's Monday
+  for (const dateKey of Object.keys(dailyUsage)) {
+    if (!currentWeekDates.includes(dateKey)) {
+      delete dailyUsage[dateKey];
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    console.log("[LLMTrack] Cleaned up old week data from dailyUsage. Active current week dates:", currentWeekDates);
+    await setData({ dailyUsage });
+  }
+  return dailyUsage;
+}
 
 /**
  * Records the first opened timestamp of the day for a platform if it doesn't already exist.
@@ -16,13 +42,13 @@ import { getLocalDateString, splitSessionByDay } from "../utils/time.js";
  */
 export async function recordFirstOpened(platform, timestamp) {
   if (!platform || !timestamp) {
-    const storageData = await getData("dailyUsage");
-    return storageData.dailyUsage || {};
+    const dailyUsage = await performWeeklyRolloverCleanup();
+    return dailyUsage;
   }
 
   const date = getLocalDateString(new Date(timestamp));
-  const storageData = await getData("dailyUsage");
-  const dailyUsage = storageData.dailyUsage || {};
+  // Perform weekly cleanup before record, just in case
+  const dailyUsage = await performWeeklyRolloverCleanup();
 
   if (!dailyUsage[date]) {
     dailyUsage[date] = {};
@@ -51,13 +77,12 @@ export async function recordFirstOpened(platform, timestamp) {
  */
 export async function recordSessionUsage(platform, startTime, endTime) {
   if (!platform || !startTime || !endTime || endTime <= startTime) {
-    const storageData = await getData("dailyUsage");
-    return storageData.dailyUsage || {};
+    const dailyUsage = await performWeeklyRolloverCleanup();
+    return dailyUsage;
   }
 
   const segments = splitSessionByDay(startTime, endTime);
-  const storageData = await getData("dailyUsage");
-  const dailyUsage = storageData.dailyUsage || {};
+  const dailyUsage = await performWeeklyRolloverCleanup();
 
   segments.forEach(segment => {
     const { date, durationMs } = segment;
@@ -66,15 +91,20 @@ export async function recordSessionUsage(platform, startTime, endTime) {
     const durationSeconds = Math.floor(durationMs / 1000);
     if (durationSeconds <= 0) return;
 
-    if (!dailyUsage[date]) {
-      dailyUsage[date] = {};
+    // Only save the usage segment if it belongs to the current week's dates
+    const currentWeekDates = getCurrentWeekDates();
+    if (currentWeekDates.includes(date)) {
+      if (!dailyUsage[date]) {
+        dailyUsage[date] = {};
+      }
+      if (!dailyUsage[date][platform]) {
+        dailyUsage[date][platform] = { totalUsageSeconds: 0 };
+      }
+      dailyUsage[date][platform].totalUsageSeconds += durationSeconds;
+      console.log(`[LLMTrack] Usage added: ${platform} +${durationSeconds}s for ${date}`);
+    } else {
+      console.log(`[LLMTrack] Discarded segment ${platform} +${durationSeconds}s for old week date: ${date}`);
     }
-    if (!dailyUsage[date][platform]) {
-      dailyUsage[date][platform] = { totalUsageSeconds: 0 };
-    }
-    dailyUsage[date][platform].totalUsageSeconds += durationSeconds;
-
-    console.log(`[LLMTrack] Usage added: ${platform} +${durationSeconds}s for ${date}`);
   });
 
   await setData({ dailyUsage });
@@ -83,9 +113,10 @@ export async function recordSessionUsage(platform, startTime, endTime) {
 
 /**
  * Gets the daily usage data from storage.
+ * Runs cleanups first to maintain data integrity.
  * @returns {Promise<object>} The daily usage object.
  */
 export async function getDailyUsage() {
-  const storageData = await getData("dailyUsage");
-  return storageData.dailyUsage || {};
+  const dailyUsage = await performWeeklyRolloverCleanup();
+  return dailyUsage;
 }

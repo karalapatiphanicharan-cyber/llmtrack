@@ -142,3 +142,34 @@ export function splitSessionByDay(startTime, endTime) {
 
   return segments;
 }
+
+/**
+ * Returns a Date representing the Monday 00:00:00 of the current week in local timezone.
+ * @param {Date} [date] - Optional date object. Defaults to current date.
+ * @returns {Date} Monday of the current week.
+ */
+export function getStartOfCurrentWeek(date = new Date()) {
+  const currentDay = date.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+  const daysToSubtract = currentDay === 0 ? 6 : currentDay - 1;
+
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - daysToSubtract);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+/**
+ * Returns an array of YYYY-MM-DD date strings for the current Monday-Sunday week.
+ * @param {Date} [date] - Optional date object. Defaults to current date.
+ * @returns {string[]} Date strings.
+ */
+export function getCurrentWeekDates(date = new Date()) {
+  const monday = getStartOfCurrentWeek(date);
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(getLocalDateString(d));
+  }
+  return dates;
+}
