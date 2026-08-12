@@ -19,18 +19,25 @@ async function saveSessionToStorage() {
   await setData({ activeSession });
 }
 
-// Loads session state from storage to handle service worker restart/recovery
-export async function initializeSessionFromStorage() {
-  const data = await getData("activeSession");
-  if (data.activeSession) {
-    activeSession = data.activeSession;
-    console.log("[LLMTrack] Session state recovered:", activeSession);
-  }
-}
-
 // Timeout handle for the transient navigation debounce
 let debounceTimeout = null;
 const DEBOUNCE_DELAY_MS = 1500; // 1.5 seconds
+
+/**
+ * Loads session state from storage to handle service worker restart/recovery.
+ * Returns a promise that resolves when activeState is loaded.
+ */
+export const initializationPromise = (async () => {
+  try {
+    const data = await getData("activeSession");
+    if (data && data.activeSession) {
+      activeSession = data.activeSession;
+      console.log("[LLMTrack] Session state recovered:", activeSession);
+    }
+  } catch (err) {
+    console.error("[LLMTrack] Failed to initialize session from storage:", err);
+  }
+})();
 
 /**
  * Handle platform and tab state transitions.

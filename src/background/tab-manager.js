@@ -4,7 +4,7 @@
  */
 
 import { detectLLM } from "../utils/llmDetector.js";
-import { handleTransition, getActiveSession } from "./session-tracker.js";
+import { handleTransition, getActiveSession, initializationPromise } from "./session-tracker.js";
 
 /**
  * Update active state by executing the transition logic.
@@ -12,6 +12,7 @@ import { handleTransition, getActiveSession } from "./session-tracker.js";
  * @param {string|null} url
  */
 export async function updateActiveState(tabId, url) {
+  await initializationPromise;
   const detection = detectLLM(url);
   const platform = detection.supported ? detection.platform : null;
   await handleTransition(platform, tabId);
@@ -29,7 +30,9 @@ export function reevaluateActiveTab() {
   chrome.windows.getLastFocused({ populate: true }, (window) => {
     if (chrome.runtime.lastError || !window || !window.focused) {
       // No browser window has focus
-      handleTransition(null, null);
+      initializationPromise.then(() => {
+        handleTransition(null, null);
+      });
       return;
     }
 
@@ -38,13 +41,16 @@ export function reevaluateActiveTab() {
     if (activeTab) {
       updateActiveState(activeTab.id, activeTab.url);
     } else {
-      handleTransition(null, null);
+      initializationPromise.then(() => {
+        handleTransition(null, null);
+      });
     }
   });
 }
 
 /**
- * Setup and bind all Chrome API event listeners
+ * Setup and bind all Chrome API event listeners.
+ * These are registered synchronously so the Service Worker receives them immediately on startup.
  */
 export function initTabManager() {
   if (typeof chrome === "undefined" || !chrome.tabs) {
@@ -82,7 +88,9 @@ export function initTabManager() {
   chrome.windows.onFocusChanged.addListener((windowId) => {
     if (windowId === chrome.windows.WINDOW_ID_NONE) {
       // Browser application lost focus completely
-      handleTransition(null, null);
+      initializationPromise.then(() => {
+        handleTransition(null, null);
+      });
     } else {
       reevaluateActiveTab();
     }
@@ -90,10 +98,12 @@ export function initTabManager() {
 
   // 4. Tab removal / closing
   chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
-    const activeSession = getActiveSession();
-    if (tabId === activeSession.activeTabId) {
-      reevaluateActiveTab();
-    }
+    initializationPromise.then(() => {
+      const activeSession = getActiveSession();
+      if (tabId === activeSession.activeTabId) {
+        reevaluateActiveTab();
+      }
+    });
   });
 
   // Initial tab reevaluation on service worker start

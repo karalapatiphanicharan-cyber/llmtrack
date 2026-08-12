@@ -6,16 +6,13 @@
  */
 
 import { initTabManager } from "./tab-manager.js";
-import { initializeSessionFromStorage, getActiveSession } from "./session-tracker.js";
+import { initializationPromise, getActiveSession } from "./session-tracker.js";
 import { getDailyUsage } from "./usage-tracker.js";
 
 console.log("LLMTrack Background Service Worker initialized.");
 
-// Initialize session state from storage (e.g. recovery after suspension/restart)
-initializeSessionFromStorage().then(() => {
-  // Setup the Chrome Event listeners via tab manager
-  initTabManager();
-});
+// Register all Chrome event listeners synchronously at top level so MV3 can wake up the worker
+initTabManager();
 
 /**
  * Listens for messages from the Popup or Content Scripts.
@@ -30,17 +27,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     });
   } else if (request.action === "GET_ACTIVE_PLATFORM") {
-    const session = getActiveSession();
-    // Re-format to match Phase 1 activeState schema while exposing Phase 2 sessionStartedAt
-    sendResponse({
-      success: true,
-      data: {
-        active: session.activePlatform !== null,
-        platform: session.activePlatform,
-        tabId: session.activeTabId,
-        sessionStartedAt: session.sessionStartedAt
-      }
+    // Wait for initialization from storage before responding
+    initializationPromise.then(() => {
+      const session = getActiveSession();
+      sendResponse({
+        success: true,
+        data: {
+          active: session.activePlatform !== null,
+          platform: session.activePlatform,
+          tabId: session.activeTabId,
+          sessionStartedAt: session.sessionStartedAt
+        }
+      });
+    }).catch(err => {
+      console.error("[LLMTrack] Error in initialization in GET_ACTIVE_PLATFORM:", err);
+      sendResponse({ success: false, error: err.message });
     });
+    return true; // Keep message channel open for async response
   } else if (request.action === "GET_DAILY_USAGE") {
     getDailyUsage().then(dailyUsage => {
       sendResponse({
