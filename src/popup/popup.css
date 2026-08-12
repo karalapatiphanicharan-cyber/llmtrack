@@ -1,11 +1,12 @@
 :root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #121826;
-  --bg-tertiary: #1b2336;
+  --bg-primary: #080b14;
+  --bg-secondary: #0d1220;
+  --bg-tertiary: #121826;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --border-color: #1e293b;
+
   --primary-color: #6366f1; /* purple/indigo highlight */
   --primary-hover: #4f46e5;
   --success-color: #10b981;
@@ -33,7 +34,7 @@ body {
 .popup-container {
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 14px;
   min-height: 290px;
 }
 
@@ -41,7 +42,7 @@ body {
 .popup-header {
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .logo-area {
@@ -50,26 +51,48 @@ body {
   justify-content: space-between;
 }
 
+.brand-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .logo-text {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: #a5b4fc; /* subtle indigo text */
+  color: var(--text-primary);
   letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .badge {
-  font-size: 9px;
-  font-weight: 700;
-  background-color: var(--primary-color);
-  color: white;
-  padding: 1px 5px;
-  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #4f46e5 100%);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .subtitle {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  margin-top: 1px;
+  margin-top: -1px;
 }
 
 /* Main sections */
@@ -89,28 +112,29 @@ body {
 }
 
 .section-title {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--text-muted);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 /* Current Section Status Badges */
 .status-badge {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 8px;
+  font-weight: 800;
   padding: 1px 5px;
   border-radius: 4px;
   text-transform: uppercase;
 }
 
 .status-badge.active {
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: rgba(16, 185, 129, 0.15);
   color: var(--success-color);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status-badge.inactive {
-  background-color: rgba(100, 116, 139, 0.1);
+  background-color: rgba(100, 116, 139, 0.15);
   color: var(--text-secondary);
 }
 
@@ -153,15 +177,35 @@ body {
   font-weight: 600;
 }
 
-/* Detail Rows */
+/* Detail Rows Card with Layered Surfaces */
 .detail-rows {
   display: flex;
   flex-direction: column;
   gap: 4px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px 8px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: all 0.3s ease;
+}
+
+/* Active platform specific borders & glow tints */
+.detail-rows.active-chatgpt {
+  border-color: rgba(16, 163, 127, 0.4);
+  box-shadow: 0 0 8px rgba(16, 163, 127, 0.1);
+  background-color: rgba(16, 163, 127, 0.02);
+}
+
+.detail-rows.active-gemini {
+  border-color: rgba(26, 115, 232, 0.4);
+  box-shadow: 0 0 8px rgba(26, 115, 232, 0.1);
+  background-color: rgba(26, 115, 232, 0.02);
+}
+
+.detail-rows.active-claude {
+  border-color: rgba(217, 119, 6, 0.4);
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.1);
+  background-color: rgba(217, 119, 6, 0.02);
 }
 
 .detail-row {
@@ -181,7 +225,7 @@ body {
   color: var(--text-primary);
 }
 
-/* Today Section Platform Rows */
+/* Today Section Platform Rows with Surface Depth */
 .platform-list {
   list-style: none;
   display: flex;
@@ -195,8 +239,14 @@ body {
   align-items: center;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px 8px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.platform-row:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #2e3c54;
 }
 
 .platform-left {
@@ -224,15 +274,15 @@ body {
 }
 
 .platform-name {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--text-primary);
 }
 
 .platform-time {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #a5b4fc; /* subtle indigo color for the totals */
+  color: #a5b4fc; /* subtle brand purple tint for usage numbers */
 }
 
 /* Footer Section */
@@ -249,33 +299,52 @@ body {
   margin-bottom: 4px;
 }
 
+.footer-status-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.footer-dot.active {
+  background-color: var(--success-color);
+  box-shadow: 0 0 4px var(--success-color);
+}
+
 .footer-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   color: var(--text-secondary);
+  letter-spacing: 0.5px;
 }
 
 .engine-badge {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 8px;
+  font-weight: 800;
   padding: 1px 5px;
   border-radius: 4px;
   text-transform: uppercase;
 }
 
 .engine-badge.active {
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: rgba(16, 185, 129, 0.15);
   color: var(--success-color);
 }
 
 .engine-badge.inactive {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
 .privacy-promise {
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--text-muted);
   text-align: center;
   line-height: 1.2;
+  margin-top: 2px;
 }
