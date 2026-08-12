@@ -120,3 +120,75 @@ export async function getDailyUsage() {
   const dailyUsage = await performWeeklyRolloverCleanup();
   return dailyUsage;
 }
+
+/**
+ * Generates a single, authoritative, precise usage and session snapshot.
+ * Combines persisted storage, current week bounds, and the live running session's exact elapsed seconds.
+ * Both the main popup and the 7-day history must derive their displayed values from this snapshot.
+ * @param {object|null} activeSession - Current active session memory state.
+ * @returns {Promise<object>} Authoritative snapshot.
+ */
+export async function getUsageSnapshot(activeSession) {
+  const currentWeekDates = getCurrentWeekDates();
+  const todayStr = getLocalDateString();
+  const dailyUsage = await performWeeklyRolloverCleanup();
+
+  // Create a deep copy to prevent mutating the persisted storage in memory
+  const snapshotUsage = JSON.parse(JSON.stringify(dailyUsage));
+
+  // If there is an active session running, split its live elapsed time up to now
+  // and temporarily add it to the snapshot copy.
+  if (activeSession && activeSession.activePlatform && activeSession.sessionStartedAt) {
+    const platform = activeSession.activePlatform;
+    const segments = splitSessionByDay(activeSession.sessionStartedAt, Date.now());
+
+    segments.forEach(seg => {
+      const { date, durationMs } = seg;
+      const seconds = Math.floor(durationMs / 1000);
+      if (seconds <= 0) return;
+
+      if (currentWeekDates.includes(date)) {
+        if (!snapshotUsage[date]) {
+          snapshotUsage[date] = {};
+        }
+        if (!snapshotUsage[date][platform]) {
+          snapshotUsage[date][platform] = { totalUsageSeconds: 0 };
+        }
+        snapshotUsage[date][platform].totalUsageSeconds += seconds;
+      }
+    });
+  }
+
+  // Construct structured daily and weekly weekData mapping
+  const weekData = {};
+  currentWeekDates.forEach(date => {
+    const dayData = snapshotUsage[date] || {};
+    const chatgpt = (dayData.chatgpt && dayData.chatgpt.totalUsageSeconds) || 0;
+    const gemini = (dayData.gemini && dayData.gemini.totalUsageSeconds) || 0;
+    const claude = (dayData.claude && dayData.claude.totalUsageSeconds) || 0;
+
+    const chatgptFirst = (dayData.chatgpt && dayData.chatgpt.firstOpenedAt) || null;
+    const geminiFirst = (dayData.gemini && dayData.gemini.firstOpenedAt) || null;
+    const claudeFirst = (dayData.claude && dayData.claude.firstOpenedAt) || null;
+
+    weekData[date] = {
+      chatgpt,
+      gemini,
+      claude,
+      total: chatgpt + gemini + claude,
+      firstOpened: {
+        chatgpt: chatgptFirst,
+        gemini: geminiFirst,
+        claude: claudeFirst
+      }
+    };
+  });
+
+  return {
+    activePlatform: (activeSession && activeSession.activePlatform) || null,
+    activeTabId: (activeSession && activeSession.activeTabId) || null,
+    sessionStartedAt: (activeSession && activeSession.sessionStartedAt) || null,
+    todayStr,
+    weekData
+  };
+}

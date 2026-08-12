@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const startedTodayElement = document.getElementById("session-started-today");
   const currentSessionElement = document.getElementById("session-current-start");
   const currentCardElement = document.getElementById("current-card");
+  const unsupportedMsgElement = document.getElementById("unsupported-message");
 
   // Navigation toggle buttons & views
   const toggleBtn = document.getElementById("history-toggle-btn");
@@ -40,9 +41,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     claude: document.getElementById("usage-claude")
   };
 
-  // State
-  let activeSessionState = null;
-  let accumulatedDailyUsage = {};
+  // Authoritative State Memory from Background Snapshot
+  let snapshotState = null;
   let isHistoryView = false;
   let updateIntervalId = null;
 
@@ -51,14 +51,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     toggleBtn.addEventListener("click", () => {
       isHistoryView = !isHistoryView;
       if (isHistoryView) {
-        // Switch to History
         overviewView.classList.add("hidden");
         historyView.classList.remove("hidden");
         btnText.textContent = "OVERVIEW";
         btnIcon.textContent = "←";
         renderHistoryView();
       } else {
-        // Switch to Overview
         historyView.classList.add("hidden");
         overviewView.classList.remove("hidden");
         btnText.textContent = "7 DAYS";
@@ -89,9 +87,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       });
 
-      // Fetch dynamic state immediately and kick off UI interval
+      // Fetch unified dynamic state snapshot and kick off interval
       await fetchAndUpdateState();
-      updateIntervalId = setInterval(tickUI, 1000);
+      updateIntervalId = setInterval(fetchAndUpdateState, 1000);
 
     } catch (e) {
       console.error("Error communicating with service worker:", e);
@@ -105,72 +103,46 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Fetches latest state from background service worker
+   * Fetches latest authoritative snapshot from background service worker.
+   * Both Overview and History views consume this SAME snapshot.
    */
   async function fetchAndUpdateState() {
     return new Promise((resolve) => {
-      // 2. Get Currently Active Platform
-      chrome.runtime.sendMessage({ action: "GET_ACTIVE_PLATFORM" }, (responseActive) => {
-        if (chrome.runtime.lastError) {
-          console.warn("Could not retrieve active platform:", chrome.runtime.lastError);
+      chrome.runtime.sendMessage({ action: "GET_USAGE_SNAPSHOT" }, (response) => {
+        if (chrome.runtime.lastError || !response || !response.success || !response.data) {
+          console.warn("Could not retrieve usage snapshot:", chrome.runtime.lastError);
           setUnsupportedPlatform();
           resolve();
           return;
         }
 
-        if (responseActive && responseActive.success && responseActive.data) {
-          activeSessionState = responseActive.data;
+        snapshotState = response.data;
+
+        // Update popup components from the single authoritative state!
+        updatePlatformUI(snapshotState);
+        if (isHistoryView) {
+          renderHistoryView();
         } else {
-          activeSessionState = null;
+          updateUsageDisplay();
         }
-
-        // 3. Get Today's Daily Usage
-        chrome.runtime.sendMessage({ action: "GET_DAILY_USAGE" }, (responseUsage) => {
-          if (!chrome.runtime.lastError && responseUsage && responseUsage.success && responseUsage.data) {
-            accumulatedDailyUsage = responseUsage.data;
-          } else {
-            accumulatedDailyUsage = {};
-          }
-
-          updatePlatformUI(activeSessionState);
-          if (isHistoryView) {
-            renderHistoryView();
-          } else {
-            updateUsageDisplay();
-          }
-          resolve();
-        });
+        resolve();
       });
     });
   }
 
   /**
-   * Render Today's usage total.
-   * If a platform is active, we add the live running elapsed time to its display dynamically.
-   * Uses splitSessionByDay to ensure only today's segment of a running session is added.
+   * Render Today's usage total from the authoritative snapshot
    */
   function updateUsageDisplay() {
-    const todayStr = getLocalDateString();
-    const todayData = accumulatedDailyUsage[todayStr] || {};
+    if (!snapshotState) return;
+
+    const todayStr = snapshotState.todayStr;
+    const todayData = snapshotState.weekData[todayStr] || { chatgpt: 0, gemini: 0, claude: 0 };
 
     const platforms = ["chatgpt", "gemini", "claude"];
     platforms.forEach(platform => {
-      let totalSeconds = 0;
-      if (todayData[platform]) {
-        totalSeconds = todayData[platform].totalUsageSeconds || 0;
-      }
-
-      // Add live running time if active
-      if (activeSessionState && activeSessionState.active && activeSessionState.platform === platform && activeSessionState.sessionStartedAt) {
-        // Split the running session up to now
-        const segments = splitSessionByDay(activeSessionState.sessionStartedAt, Date.now());
-        const todaySegment = segments.find(s => s.date === todayStr);
-        if (todaySegment) {
-          totalSeconds += Math.floor(todaySegment.durationMs / 1000);
-        }
-      }
-
-      const formatted = formatSessionDuration(totalSeconds * 1000);
+      const seconds = todayData[platform] || 0;
+      const formatted = formatSessionDuration(seconds * 1000);
       if (usageElements[platform]) {
         usageElements[platform].textContent = formatted;
       }
@@ -178,11 +150,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /**
-   * Renders the 7-Day History View
+   * Renders the 7-Day History View from the authoritative snapshot
    */
   function renderHistoryView() {
-    const todayStr = getLocalDateString();
-    const currentWeekDates = getCurrentWeekDates(); // Monday -> Sunday dates
+    if (!snapshotState) return;
+
+    const todayStr = snapshotState.todayStr;
+    const currentWeekDates = Object.keys(snapshotState.weekData).sort(); // Sort date strings Monday -> Sunday
 
     // 1. Format and display date range (e.g. AUG 10 — AUG 16)
     if (historyRangeElement && currentWeekDates.length === 7) {
@@ -191,33 +165,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       historyRangeElement.textContent = formatWeekRange(monStr, sunStr);
     }
 
-    // 2. Sum up daily and platform totals
+    // 2. Sum up weekly totals and daily totals directly from the snapshot!
     let weeklyTotalSeconds = 0;
     const platformWeeklySeconds = { chatgpt: 0, gemini: 0, claude: 0 };
-    const dailyTotalSeconds = [0, 0, 0, 0, 0, 0, 0]; // MON -> SUN totals
+    const dailyTotalSeconds = [0, 0, 0, 0, 0, 0, 0];
 
     currentWeekDates.forEach((dateStr, index) => {
-      const dayData = accumulatedDailyUsage[dateStr] || {};
+      const dayData = snapshotState.weekData[dateStr] || { chatgpt: 0, gemini: 0, claude: 0, total: 0 };
+      dailyTotalSeconds[index] = dayData.total;
+      weeklyTotalSeconds += dayData.total;
+
       const platforms = ["chatgpt", "gemini", "claude"];
-
-      platforms.forEach(platform => {
-        let seconds = 0;
-        if (dayData[platform]) {
-          seconds = dayData[platform].totalUsageSeconds || 0;
-        }
-
-        // Add live running time if active and matching this date
-        if (activeSessionState && activeSessionState.active && activeSessionState.platform === platform && activeSessionState.sessionStartedAt) {
-          const segments = splitSessionByDay(activeSessionState.sessionStartedAt, Date.now());
-          const matchSegment = segments.find(s => s.date === dateStr);
-          if (matchSegment) {
-            seconds += Math.floor(matchSegment.durationMs / 1000);
-          }
-        }
-
-        dailyTotalSeconds[index] += seconds;
-        platformWeeklySeconds[platform] += seconds;
-        weeklyTotalSeconds += seconds;
+      platforms.forEach(p => {
+        platformWeeklySeconds[p] += dayData[p] || 0;
       });
     });
 
@@ -226,7 +186,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       weeklyTotalValueElement.textContent = formatSessionDuration(weeklyTotalSeconds * 1000);
     }
 
-    // 4. Render Day Rows
+    // 4. Render Day Rows and proportional Bars
     const maxDaySeconds = Math.max(...dailyTotalSeconds);
 
     currentWeekDates.forEach((dateStr, index) => {
@@ -238,7 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!row) return;
 
-      // Reset styles
+      // Reset style classes
       row.className = "history-day-row";
       if (tag) tag.classList.add("hidden");
 
@@ -293,7 +253,6 @@ document.addEventListener("DOMContentLoaded", async () => {
    * Helper to format week range string cleanly (e.g. "AUG 10 — AUG 16" or "AUG 31 — SEP 6")
    */
   function formatWeekRange(monStr, sunStr) {
-    const months = ["AUG", "SEP", "OCT", "NOV", "DEC", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL"]; // Sample maps
     const fullMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
     const monDate = new Date(monStr + "T00:00:00");
@@ -308,19 +267,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       return `${monMonth} ${monDay} — ${sunDay}`;
     } else {
       return `${monMonth} ${monDay} — ${sunMonth} ${sunDay}`;
-    }
-  }
-
-  /**
-   * Dynamic local interval UI ticks to update running session durations
-   */
-  function tickUI() {
-    if (activeSessionState && activeSessionState.active && activeSessionState.sessionStartedAt) {
-      if (isHistoryView) {
-        renderHistoryView();
-      } else {
-        updateUsageDisplay();
-      }
     }
   }
 
@@ -356,11 +302,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       currentSessionElement.textContent = "-";
     }
     if (currentCardElement) {
-      currentCardElement.className = "detail-rows";
+      currentCardElement.className = "detail-rows hidden"; // Hide session rows when unsupported!
+    }
+    if (unsupportedMsgElement) {
+      unsupportedMsgElement.classList.remove("hidden"); // Show instruction message when unsupported!
     }
   }
 
   function setMockPlatform() {
+    // Generate beautiful mock snapshotState representing standard Phase 3 data
+    const currentWeek = getCurrentWeekDates();
+    const todayStr = getLocalDateString();
+
+    const mockWeekData = {};
+    currentWeek.forEach((date, index) => {
+      // Mock MON (index 0) with 90 min, TUE (index 1) with 45 min, and today with 30 min (including active)
+      if (date > todayStr) {
+        mockWeekData[date] = { chatgpt: 0, gemini: 0, claude: 0, total: 0 };
+      } else if (date === todayStr) {
+        mockWeekData[date] = { chatgpt: 1800, gemini: 0, claude: 0, total: 1800 }; // 30 min
+      } else if (index === 0) {
+        mockWeekData[date] = { chatgpt: 5400, gemini: 0, claude: 0, total: 5400 }; // 90 min
+      } else if (index === 1) {
+        mockWeekData[date] = { chatgpt: 0, gemini: 2700, claude: 0, total: 2700 }; // 45 min
+      } else {
+        mockWeekData[date] = { chatgpt: 0, gemini: 0, claude: 0, total: 0 }; // 0 min completed
+      }
+    });
+
+    snapshotState = {
+      activePlatform: "chatgpt",
+      activeTabId: 999,
+      sessionStartedAt: Date.now() - 14 * 60 * 1000, // 14 min ago
+      todayStr,
+      weekData: mockWeekData
+    };
+
     if (indicatorElement) {
       indicatorElement.className = "indicator chatgpt";
     }
@@ -380,19 +357,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (currentCardElement) {
       currentCardElement.className = "detail-rows active-chatgpt";
     }
-    if (usageElements.chatgpt) {
-      usageElements.chatgpt.textContent = "28 min";
+    if (unsupportedMsgElement) {
+      unsupportedMsgElement.classList.add("hidden");
     }
-    if (usageElements.gemini) {
-      usageElements.gemini.textContent = "<1 min";
-    }
-    if (usageElements.claude) {
-      usageElements.claude.textContent = "<1 min";
-    }
+
+    updateUsageDisplay();
   }
 
   function updatePlatformUI(state) {
-    if (!state || !state.active || !state.platform) {
+    if (!state || !state.activePlatform) {
       setUnsupportedPlatform();
       return;
     }
@@ -403,10 +376,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       claude: "Claude"
     };
 
-    const prettyName = platformNameMap[state.platform] || state.platform;
+    const prettyName = platformNameMap[state.activePlatform] || state.activePlatform;
 
     if (indicatorElement) {
-      indicatorElement.className = `indicator ${state.platform}`;
+      indicatorElement.className = `indicator ${state.activePlatform}`;
     }
     if (platformTextElement) {
       platformTextElement.textContent = prettyName;
@@ -416,17 +389,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       detectionStatusElement.className = "status-badge active";
     }
 
-    // Apply platform-specific active glow/tint classes
+    // Show current card and hide unsupported message
     if (currentCardElement) {
-      currentCardElement.className = `detail-rows active-${state.platform}`;
+      currentCardElement.className = `detail-rows active-${state.activePlatform}`;
+    }
+    if (unsupportedMsgElement) {
+      unsupportedMsgElement.classList.add("hidden");
     }
 
     // 1. Started Today (firstOpenedAt)
-    const todayStr = getLocalDateString();
-    const todayData = accumulatedDailyUsage[todayStr] || {};
+    const todayStr = state.todayStr;
+    const todayData = state.weekData[todayStr] || {};
     let firstOpenedAt = null;
-    if (todayData[state.platform]) {
-      firstOpenedAt = todayData[state.platform].firstOpenedAt;
+    if (todayData.firstOpened) {
+      firstOpenedAt = todayData.firstOpened[state.activePlatform];
     }
 
     // Fallback: if firstOpenedAt is not yet in storage, use the active session started time
@@ -434,12 +410,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       firstOpenedAt = state.sessionStartedAt;
     }
 
-    if (startedTodayElement) {
+    if (startedTodayElement && firstOpenedAt) {
       startedTodayElement.textContent = formatCleanTime(firstOpenedAt);
     }
 
     // 2. Current Session (sessionStartedAt)
-    if (currentSessionElement) {
+    if (currentSessionElement && state.sessionStartedAt) {
       currentSessionElement.textContent = formatCleanTime(state.sessionStartedAt);
     }
   }

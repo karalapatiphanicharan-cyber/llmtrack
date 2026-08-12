@@ -5,9 +5,9 @@
  * Single Source of Truth for detection and timing state.
  */
 
-import { initTabManager } from "./tab-manager.js";
+import { initTabManager, reconcileActiveState } from "./tab-manager.js";
 import { initializationPromise, getActiveSession } from "./session-tracker.js";
-import { getDailyUsage } from "./usage-tracker.js";
+import { getDailyUsage, getUsageSnapshot } from "./usage-tracker.js";
 
 console.log("LLMTrack Background Service Worker initialized.");
 
@@ -22,8 +22,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({
       success: true,
       data: {
-        trackingEngine: "Active (Phase 2 Tracking)",
-        version: "0.2.0"
+        trackingEngine: "Active (Phase 3 Tracking)",
+        version: "0.3.0"
       }
     });
   } else if (request.action === "GET_ACTIVE_PLATFORM") {
@@ -52,6 +52,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     }).catch(err => {
       console.error("[LLMTrack] Error retrieving daily usage:", err);
+      sendResponse({ success: false, error: err.message });
+    });
+    return true; // Keep message channel open for async response
+  } else if (request.action === "GET_USAGE_SNAPSHOT") {
+    // 1. Force state reconciliation to determine absolute current window/tab state
+    reconcileActiveState().then(() => {
+      // 2. Read current active session & build the authoritative usage snapshot
+      const activeSession = getActiveSession();
+      getUsageSnapshot(activeSession).then((snapshot) => {
+        sendResponse({
+          success: true,
+          data: snapshot
+        });
+      });
+    }).catch(err => {
+      console.error("[LLMTrack] Error generating usage snapshot:", err);
       sendResponse({ success: false, error: err.message });
     });
     return true; // Keep message channel open for async response
