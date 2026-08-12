@@ -34,21 +34,22 @@ body {
 .popup-container {
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  min-height: 290px;
+  padding: 12px;
+  min-height: 380px; /* adjusted slightly for premium analytics view */
 }
 
 /* Header */
 .popup-header {
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .logo-area {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 10px;
 }
 
 .brand-left {
@@ -101,30 +102,40 @@ body {
   margin-top: -1px;
 }
 
-/* Top-Right Toggle Button */
-.nav-button {
-  background-color: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  color: #a5b4fc;
+/* Sub Navigation Tab bar */
+.sub-nav {
+  display: flex;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.nav-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
   font-size: 9px;
-  font-weight: 700;
-  padding: 3px 8px;
+  font-weight: 750;
+  padding: 6px 0;
   border-radius: 6px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  text-align: center;
   transition: all 0.2s ease;
+  letter-spacing: 0.5px;
 }
 
-.nav-button:hover {
-  background-color: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #f8fafc;
+.nav-tab:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
-.btn-icon {
-  font-size: 11px;
+.nav-tab.active {
+  color: #ffffff;
+  background-color: var(--bg-tertiary);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Main sections */
@@ -133,7 +144,7 @@ body {
 }
 
 .section {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .section-header {
@@ -338,7 +349,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .weekly-total-label {
@@ -361,7 +372,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .history-day-row {
@@ -463,6 +474,107 @@ body {
   font-size: 11.5px;
   font-weight: 600;
   color: #a5b4fc;
+}
+
+/* ANALYTICS VIEW STYLES */
+.analytics-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+/* Stacked Platform Mix Bar Track */
+.stacked-bar-container {
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  display: flex;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.stack-segment {
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stack-segment.chatgpt {
+  background-color: var(--accent-chatgpt);
+}
+
+.stack-segment.gemini {
+  background-color: var(--accent-gemini);
+}
+
+.stack-segment.claude {
+  background-color: var(--accent-claude);
+}
+
+.platform-mix-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mix-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mix-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mix-time {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mix-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a5b4fc;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Analytics KPIs Grid */
+.analytics-grid {
+  display: flex;
+  gap: 8px;
+}
+
+.kpi-box {
+  flex: 1;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.kpi-value {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Navigation Utilities */

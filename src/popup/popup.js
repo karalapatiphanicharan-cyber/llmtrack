@@ -23,17 +23,37 @@ document.addEventListener("DOMContentLoaded", async () => {
   const currentCardElement = document.getElementById("current-card");
   const unsupportedMsgElement = document.getElementById("unsupported-message");
 
-  // Navigation toggle buttons & views
-  const toggleBtn = document.getElementById("history-toggle-btn");
-  const btnText = document.getElementById("nav-btn-text");
-  const btnIcon = document.getElementById("nav-btn-icon");
+  // Sub Navigation Tabs & Views
+  const tabOverviewBtn = document.getElementById("tab-overview");
+  const tabHistoryBtn = document.getElementById("tab-history");
+  const tabAnalyticsBtn = document.getElementById("tab-analytics");
+
   const overviewView = document.getElementById("overview-view");
   const historyView = document.getElementById("history-view");
+  const analyticsView = document.getElementById("analytics-view");
 
   // History Elements
   const historyRangeElement = document.getElementById("history-date-range");
   const weeklyTotalValueElement = document.getElementById("weekly-total-value");
   const mostUsedElement = document.getElementById("most-used-platform");
+
+  // Analytics Elements
+  const analyticsWeeklyTotal = document.getElementById("analytics-weekly-total");
+  const stackChatgpt = document.getElementById("stack-chatgpt");
+  const stackGemini = document.getElementById("stack-gemini");
+  const stackClaude = document.getElementById("stack-claude");
+
+  const mixValChatgpt = document.getElementById("mix-val-chatgpt");
+  const mixPctChatgpt = document.getElementById("mix-pct-chatgpt");
+  const mixValGemini = document.getElementById("mix-val-gemini");
+  const mixPctGemini = document.getElementById("mix-pct-gemini");
+  const mixValClaude = document.getElementById("mix-val-claude");
+  const mixPctClaude = document.getElementById("mix-pct-claude");
+
+  const kpiMostUsed = document.getElementById("kpi-most-used");
+  const kpiAvgDay = document.getElementById("kpi-avg-day");
+  const kpiHighestDay = document.getElementById("kpi-highest-day");
+  const kpiLowestDay = document.getElementById("kpi-lowest-day");
 
   const usageElements = {
     chatgpt: document.getElementById("usage-chatgpt"),
@@ -43,28 +63,42 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Authoritative State Memory from Background Snapshot
   let snapshotState = null;
-  let isHistoryView = false;
+  let activeTabName = "overview"; // overview | history | analytics
   let updateIntervalId = null;
 
-  // Set toggle listener
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", () => {
-      isHistoryView = !isHistoryView;
-      if (isHistoryView) {
-        overviewView.classList.add("hidden");
-        historyView.classList.remove("hidden");
-        btnText.textContent = "OVERVIEW";
-        btnIcon.textContent = "←";
-        renderHistoryView();
-      } else {
-        historyView.classList.add("hidden");
-        overviewView.classList.remove("hidden");
-        btnText.textContent = "7 DAYS";
-        btnIcon.textContent = "◷";
-        updateUsageDisplay();
-      }
-    });
-  }
+  // Bind sub-navigation tab events
+  const tabs = [
+    { btn: tabOverviewBtn, name: "overview", view: overviewView },
+    { btn: tabHistoryBtn, name: "history", view: historyView },
+    { btn: tabAnalyticsBtn, name: "analytics", view: analyticsView }
+  ];
+
+  tabs.forEach(tab => {
+    if (tab.btn) {
+      tab.btn.addEventListener("click", () => {
+        activeTabName = tab.name;
+
+        // Remove active class from all tab buttons & hide views
+        tabs.forEach(t => {
+          t.btn.classList.remove("active");
+          t.view.classList.add("hidden");
+        });
+
+        // Add active class and reveal selected view
+        tab.btn.classList.add("active");
+        tab.view.classList.remove("hidden");
+
+        // Force immediate render of the selected view
+        if (activeTabName === "history") {
+          renderHistoryView();
+        } else if (activeTabName === "analytics") {
+          renderAnalyticsView();
+        } else {
+          updateUsageDisplay();
+        }
+      });
+    }
+  });
 
   // Query background service worker
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
@@ -120,8 +154,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Update popup components from the single authoritative state!
         updatePlatformUI(snapshotState);
-        if (isHistoryView) {
+        if (activeTabName === "history") {
           renderHistoryView();
+        } else if (activeTabName === "analytics") {
+          renderAnalyticsView();
         } else {
           updateUsageDisplay();
         }
@@ -245,6 +281,171 @@ document.addEventListener("DOMContentLoaded", async () => {
         mostUsedElement.textContent = `${prettyName} (${formatSessionDuration(highestSeconds * 1000)})`;
       } else {
         mostUsedElement.textContent = "—";
+      }
+    }
+  }
+
+  /**
+   * Renders the Analytics View from the authoritative snapshot
+   */
+  function renderAnalyticsView() {
+    if (!snapshotState) return;
+
+    const todayStr = snapshotState.todayStr;
+    const currentWeekDates = Object.keys(snapshotState.weekData).sort();
+
+    // 1. Accumulate totals directly from the same authoritative snapshot dates
+    let weeklyTotalSeconds = 0;
+    const platformWeeklySeconds = { chatgpt: 0, gemini: 0, claude: 0 };
+    const dailyTotalSeconds = [0, 0, 0, 0, 0, 0, 0];
+
+    currentWeekDates.forEach((dateStr, index) => {
+      const dayData = snapshotState.weekData[dateStr] || { chatgpt: 0, gemini: 0, claude: 0, total: 0 };
+      dailyTotalSeconds[index] = dayData.total;
+      weeklyTotalSeconds += dayData.total;
+
+      const platforms = ["chatgpt", "gemini", "claude"];
+      platforms.forEach(p => {
+        platformWeeklySeconds[p] += dayData[p] || 0;
+      });
+    });
+
+    // 2. Render Weekly Total
+    if (analyticsWeeklyTotal) {
+      analyticsWeeklyTotal.textContent = formatSessionDuration(weeklyTotalSeconds * 1000);
+    }
+
+    // 3. Render Platform Mix percentages using the Largest Remainder Method (Hamilton Method)
+    if (mixPctChatgpt && mixPctGemini && mixPctClaude) {
+      const platforms = ["chatgpt", "gemini", "claude"];
+      const rawPct = [];
+      const flooredPct = [];
+      const remainders = [];
+      let sumFloored = 0;
+
+      platforms.forEach((p, idx) => {
+        const S_p = platformWeeklySeconds[p];
+        const valSpan = document.getElementById(`mix-val-${p}`);
+        if (valSpan) {
+          valSpan.textContent = formatSessionDuration(S_p * 1000);
+        }
+
+        if (weeklyTotalSeconds === 0) {
+          rawPct.push(0);
+          flooredPct.push(0);
+          remainders.push(0);
+        } else {
+          const f_p = (S_p / weeklyTotalSeconds) * 100;
+          const i_p = Math.floor(f_p);
+          rawPct.push(f_p);
+          flooredPct.push(i_p);
+          remainders.push(f_p - i_p);
+          sumFloored += i_p;
+        }
+      });
+
+      // Discrepancy allocation
+      let diff = 100 - sumFloored;
+      if (weeklyTotalSeconds > 0 && diff > 0) {
+        // Map elements to sort by largest remainder descending
+        const items = remainders.map((r, idx) => ({ idx, remainder: r }));
+        items.sort((a, b) => b.remainder - a.remainder);
+
+        for (let i = 0; i < diff; i++) {
+          flooredPct[items[i].idx] += 1;
+        }
+      }
+
+      // Display correct percentages
+      mixPctChatgpt.textContent = `${flooredPct[0]}%`;
+      mixPctGemini.textContent = `${flooredPct[1]}%`;
+      mixPctClaude.textContent = `${flooredPct[2]}%`;
+
+      // Set stacked progress bar segment widths
+      if (stackChatgpt) stackChatgpt.style.width = `${flooredPct[0]}%`;
+      if (stackGemini) stackGemini.style.width = `${flooredPct[1]}%`;
+      if (stackClaude) stackClaude.style.width = `${flooredPct[2]}%`;
+    }
+
+    // 4. Render KPIs
+    // KPI: MOST USED platform
+    if (kpiMostUsed) {
+      let highestPlatform = "—";
+      let highestSeconds = 0;
+
+      const platforms = ["chatgpt", "gemini", "claude"];
+      platforms.forEach(p => {
+        if (platformWeeklySeconds[p] > highestSeconds) {
+          highestSeconds = platformWeeklySeconds[p];
+          highestPlatform = p;
+        }
+      });
+
+      if (highestSeconds > 0) {
+        const prettyNames = { chatgpt: "ChatGPT", gemini: "Gemini", claude: "Claude" };
+        const prettyName = prettyNames[highestPlatform] || highestPlatform;
+        kpiMostUsed.textContent = `${prettyName} (${formatSessionDuration(highestSeconds * 1000)})`;
+      } else {
+        kpiMostUsed.textContent = "No usage yet";
+      }
+    }
+
+    // KPI: AVG / DAY (calculating correct non-future-day denominator)
+    if (kpiAvgDay) {
+      const elapsedDays = currentWeekDates.filter(d => d <= todayStr).length;
+      if (elapsedDays > 0 && weeklyTotalSeconds > 0) {
+        const avgSec = weeklyTotalSeconds / elapsedDays;
+        kpiAvgDay.textContent = formatSessionDuration(avgSec * 1000);
+      } else {
+        kpiAvgDay.textContent = "0 min";
+      }
+    }
+
+    // KPI: HIGHEST DAY of the week
+    if (kpiHighestDay) {
+      const completedDates = currentWeekDates.filter(d => d <= todayStr);
+      let highestDate = null;
+      let highestSeconds = 0;
+
+      completedDates.forEach((dateStr, index) => {
+        const dayTotalSec = dailyTotalSeconds[index];
+        if (dayTotalSec > highestSeconds) {
+          highestSeconds = dayTotalSec;
+          highestDate = dateStr;
+        }
+      });
+
+      if (highestSeconds > 0 && highestDate) {
+        const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const dayIdx = currentWeekDates.indexOf(highestDate);
+        const dayName = weekdayNames[dayIdx] || "—";
+        kpiHighestDay.textContent = `${dayName} (${formatSessionDuration(highestSeconds * 1000)})`;
+      } else {
+        kpiHighestDay.textContent = "No usage yet";
+      }
+    }
+
+    // KPI: LOWEST DAY (ignoring future days, completed zero-usage days count)
+    if (kpiLowestDay) {
+      const completedDates = currentWeekDates.filter(d => d <= todayStr);
+      let lowestDate = null;
+      let lowestSeconds = Infinity;
+
+      completedDates.forEach((dateStr, index) => {
+        const dayTotalSec = dailyTotalSeconds[index];
+        if (dayTotalSec < lowestSeconds) {
+          lowestSeconds = dayTotalSec;
+          lowestDate = dateStr;
+        }
+      });
+
+      if (lowestDate && lowestSeconds !== Infinity) {
+        const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const dayIdx = currentWeekDates.indexOf(lowestDate);
+        const dayName = weekdayNames[dayIdx] || "—";
+        kpiLowestDay.textContent = `${dayName} (${formatSessionDuration(lowestSeconds * 1000)})`;
+      } else {
+        kpiLowestDay.textContent = "No usage yet";
       }
     }
   }
