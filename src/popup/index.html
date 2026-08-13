@@ -16,18 +16,19 @@
           <div class="brand-text">
             <div class="brand-title-row">
               <span class="logo-text">LLMTrack</span>
-              <span class="badge">PHASE 3</span>
+              <span class="badge">PHASE 4</span>
             </div>
             <p class="subtitle">AI Usage Intelligence</p>
           </div>
         </div>
-
-        <!-- Top-Right History Navigation Toggle -->
-        <button id="history-toggle-btn" class="nav-button">
-          <span id="nav-btn-text">7 DAYS</span>
-          <span id="nav-btn-icon" class="btn-icon">◷</span>
-        </button>
       </div>
+
+      <!-- Sub-Navigation Tabs -->
+      <nav class="sub-nav">
+        <button id="tab-overview" class="nav-tab active">OVERVIEW</button>
+        <button id="tab-history" class="nav-tab">HISTORY</button>
+        <button id="tab-analytics" class="nav-tab">ANALYTICS</button>
+      </nav>
     </header>
 
     <!-- Main Content -->
@@ -187,6 +188,92 @@
           <div class="history-summary-box">
             <span class="summary-label">MOST USED</span>
             <span id="most-used-platform" class="summary-value">—</span>
+          </div>
+        </section>
+      </div>
+
+      <!-- ANALYTICS VIEW -->
+      <div id="analytics-view" class="view-panel hidden">
+        <section class="section analytics-section">
+          <div class="section-header">
+            <span class="section-title">WEEKLY METRICS</span>
+            <span id="analytics-date-range" class="status-badge active">AUG 10 — AUG 16</span>
+          </div>
+
+          <!-- Weekly Total Surface -->
+          <div class="weekly-total-card">
+            <span class="weekly-total-label">WEEKLY TOTAL</span>
+            <span id="analytics-weekly-total" class="weekly-total-value">0 min</span>
+          </div>
+
+          <!-- Platform Mix Breakdown -->
+          <div class="section-header">
+            <span class="section-title">PLATFORM MIX</span>
+          </div>
+          <div class="analytics-card">
+            <!-- Proportional horizontal stacked platform mix bar -->
+            <div class="stacked-bar-container">
+              <div id="stack-chatgpt" class="stack-segment chatgpt" style="width: 0%"></div>
+              <div id="stack-gemini" class="stack-segment gemini" style="width: 0%"></div>
+              <div id="stack-claude" class="stack-segment claude" style="width: 0%"></div>
+            </div>
+
+            <!-- Platform details list -->
+            <div class="platform-mix-stats">
+              <div class="mix-row">
+                <div class="platform-left">
+                  <span class="dot chatgpt"></span>
+                  <span class="platform-name">ChatGPT</span>
+                </div>
+                <div class="mix-right">
+                  <span id="mix-val-chatgpt" class="mix-time">0 min</span>
+                  <span id="mix-pct-chatgpt" class="mix-pct">0%</span>
+                </div>
+              </div>
+              <div class="mix-row">
+                <div class="platform-left">
+                  <span class="dot gemini"></span>
+                  <span class="platform-name">Gemini</span>
+                </div>
+                <div class="mix-right">
+                  <span id="mix-val-gemini" class="mix-time">0 min</span>
+                  <span id="mix-pct-gemini" class="mix-pct">0%</span>
+                </div>
+              </div>
+              <div class="mix-row">
+                <div class="platform-left">
+                  <span class="dot claude"></span>
+                  <span class="platform-name">Claude</span>
+                </div>
+                <div class="mix-right">
+                  <span id="mix-val-claude" class="mix-time">0 min</span>
+                  <span id="mix-pct-claude" class="mix-pct">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics KPIs Grid -->
+          <div class="analytics-grid">
+            <div class="kpi-box">
+              <span class="kpi-label">MOST USED</span>
+              <span id="kpi-most-used" class="kpi-value">—</span>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-label">AVG / DAY</span>
+              <span id="kpi-avg-day" class="kpi-value">—</span>
+            </div>
+          </div>
+
+          <div class="analytics-grid" style="margin-top: 6px;">
+            <div class="kpi-box">
+              <span class="kpi-label">HIGHEST DAY</span>
+              <span id="kpi-highest-day" class="kpi-value">—</span>
+            </div>
+            <div class="kpi-box">
+              <span class="kpi-label">LOWEST DAY</span>
+              <span id="kpi-lowest-day" class="kpi-value">—</span>
+            </div>
           </div>
         </section>
       </div>
