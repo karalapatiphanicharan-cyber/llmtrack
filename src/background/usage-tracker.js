@@ -9,11 +9,13 @@ import { getLocalDateString, splitSessionByDay, getCurrentWeekDates } from "../u
 
 /**
  * Clean up/remove daily usage records older than the current week's Monday to maintain storage efficiency.
+ * Also performs validation and sanitization of daily usage stats to prevent data corruption.
  * Ensures the active history contains only the current week's dates (Monday -> Sunday).
- * @returns {Promise<object>} The cleaned daily usage object.
+ * @returns {Promise<object>} The cleaned and sanitized daily usage object.
  */
 export async function performWeeklyRolloverCleanup() {
   const currentWeekDates = getCurrentWeekDates();
+  const todayStr = getLocalDateString();
   const storageData = await getData("dailyUsage");
   const dailyUsage = storageData.dailyUsage || {};
 
@@ -23,11 +25,45 @@ export async function performWeeklyRolloverCleanup() {
     if (!currentWeekDates.includes(dateKey)) {
       delete dailyUsage[dateKey];
       changed = true;
+      continue;
+    }
+
+    // Sanity check of daily usage values to prevent corrupted or impossible totals
+    const dayData = dailyUsage[dateKey];
+    if (dayData) {
+      const platforms = ["chatgpt", "gemini", "claude"];
+      platforms.forEach(platform => {
+        const pData = dayData[platform];
+        if (pData) {
+          // Check for negative or non-numeric totals
+          if (typeof pData.totalUsageSeconds !== "number" || isNaN(pData.totalUsageSeconds) || pData.totalUsageSeconds < 0) {
+            pData.totalUsageSeconds = 0;
+            changed = true;
+          }
+          // A single platform cannot be active for more than 24 hours in a single day
+          if (pData.totalUsageSeconds > 86400) {
+            console.warn(`[LLMTrack] Impossible usage (>24h) detected for ${platform} on ${dateKey}. Resetting to 0.`);
+            pData.totalUsageSeconds = 0;
+            changed = true;
+          }
+
+          // If this is today, also validate against firstOpenedAt
+          if (dateKey === todayStr && pData.firstOpenedAt) {
+            const elapsedMs = Date.now() - pData.firstOpenedAt;
+            const maxPossibleSeconds = Math.ceil(elapsedMs / 1000) + 60; // 60s clock skew buffer
+            if (pData.totalUsageSeconds > maxPossibleSeconds) {
+              console.warn(`[LLMTrack] Corrupted usage detected for ${platform} on ${dateKey}. Stored: ${pData.totalUsageSeconds}s, Max Possible: ${maxPossibleSeconds}s. Resetting to 0.`);
+              pData.totalUsageSeconds = 0;
+              changed = true;
+            }
+          }
+        }
+      });
     }
   }
 
   if (changed) {
-    console.log("[LLMTrack] Cleaned up old week data from dailyUsage. Active current week dates:", currentWeekDates);
+    console.log("[LLMTrack] Cleaned up and sanitized dailyUsage. Active dates:", currentWeekDates);
     await setData({ dailyUsage });
   }
   return dailyUsage;
@@ -76,18 +112,30 @@ export async function recordFirstOpened(platform, timestamp) {
  * @returns {Promise<object>} The updated daily usage object.
  */
 export async function recordSessionUsage(platform, startTime, endTime) {
-  if (!platform || !startTime || !endTime || endTime <= startTime) {
+  if (!platform || !startTime || !endTime) {
     const dailyUsage = await performWeeklyRolloverCleanup();
     return dailyUsage;
   }
 
-  const segments = splitSessionByDay(startTime, endTime);
+  const start = Number(startTime);
+  const end = Number(endTime);
+  if (isNaN(start) || !isFinite(start) || isNaN(end) || !isFinite(end) || end <= start) {
+    const dailyUsage = await performWeeklyRolloverCleanup();
+    return dailyUsage;
+  }
+
+  const supportedPlatforms = ["chatgpt", "gemini", "claude"];
+  if (!supportedPlatforms.includes(platform)) {
+    const dailyUsage = await performWeeklyRolloverCleanup();
+    return dailyUsage;
+  }
+
+  const segments = splitSessionByDay(start, end);
   const dailyUsage = await performWeeklyRolloverCleanup();
 
   segments.forEach(segment => {
     const { date, durationMs } = segment;
     // Calculate seconds, ensuring we don't drop fractions of a second completely
-    // by using standard rounding or floor. Since we are doing floor, let's keep it consistent.
     const durationSeconds = Math.floor(durationMs / 1000);
     if (durationSeconds <= 0) return;
 
