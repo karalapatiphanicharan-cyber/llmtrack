@@ -27,10 +27,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tabOverviewBtn = document.getElementById("tab-overview");
   const tabHistoryBtn = document.getElementById("tab-history");
   const tabAnalyticsBtn = document.getElementById("tab-analytics");
+  const btnSettings = document.getElementById("btn-settings");
 
   const overviewView = document.getElementById("overview-view");
   const historyView = document.getElementById("history-view");
   const analyticsView = document.getElementById("analytics-view");
+  const settingsView = document.getElementById("settings-view");
+
+  // Settings Buttons & About Info
+  const btnClearToday = document.getElementById("btn-clear-today");
+  const btnClearHistory = document.getElementById("btn-clear-history");
+  const btnResetAll = document.getElementById("btn-reset-all");
+  const settingsVersion = document.getElementById("settings-version");
+
+  // Confirmation Modal Elements
+  const confirmModal = document.getElementById("confirm-modal");
+  const modalTitle = document.getElementById("modal-title");
+  const modalDesc = document.getElementById("modal-desc");
+  const modalBtnCancel = document.getElementById("modal-btn-cancel");
+  const modalBtnConfirm = document.getElementById("modal-btn-confirm");
+
+  // Toast Feedback Elements
+  const toastFeedback = document.getElementById("toast-feedback");
+  const toastMessage = document.getElementById("toast-message");
 
   // History Elements
   const historyRangeElement = document.getElementById("history-date-range");
@@ -39,6 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Analytics Elements
   const analyticsWeeklyTotal = document.getElementById("analytics-weekly-total");
+  const analyticsDateRange = document.getElementById("analytics-date-range");
   const stackChatgpt = document.getElementById("stack-chatgpt");
   const stackGemini = document.getElementById("stack-gemini");
   const stackClaude = document.getElementById("stack-claude");
@@ -63,14 +83,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Authoritative State Memory from Background Snapshot
   let snapshotState = null;
-  let activeTabName = "overview"; // overview | history | analytics
+  let activeTabName = "overview"; // overview | history | analytics | settings
   let updateIntervalId = null;
+
+  // Set Version Dynamically from Manifest
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.getManifest) {
+    const manifest = chrome.runtime.getManifest();
+    if (manifest && manifest.version && settingsVersion) {
+      settingsVersion.textContent = manifest.version;
+    }
+  }
 
   // Bind sub-navigation tab events
   const tabs = [
     { btn: tabOverviewBtn, name: "overview", view: overviewView },
     { btn: tabHistoryBtn, name: "history", view: historyView },
-    { btn: tabAnalyticsBtn, name: "analytics", view: analyticsView }
+    { btn: tabAnalyticsBtn, name: "analytics", view: analyticsView },
+    { btn: btnSettings, name: "settings", view: settingsView }
   ];
 
   tabs.forEach(tab => {
@@ -78,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       tab.btn.addEventListener("click", () => {
         activeTabName = tab.name;
 
-        // Remove active class from all tab buttons & hide views
+        // Remove active class from all buttons & hide views
         tabs.forEach(t => {
           t.btn.classList.remove("active");
           t.view.classList.add("hidden");
@@ -93,12 +122,175 @@ document.addEventListener("DOMContentLoaded", async () => {
           renderHistoryView();
         } else if (activeTabName === "analytics") {
           renderAnalyticsView();
-        } else {
+        } else if (activeTabName === "overview") {
           updateUsageDisplay();
         }
       });
     }
   });
+
+  // Reusable confirmation dialog helper
+  let onConfirmCallback = null;
+
+  function showConfirmModal({ title, desc, confirmLabel, destructive, onConfirm }) {
+    if (!confirmModal || !modalTitle || !modalDesc || !modalBtnConfirm) return;
+
+    modalTitle.textContent = title;
+    modalDesc.textContent = desc;
+    modalBtnConfirm.textContent = confirmLabel;
+
+    // Set appropriate style classes
+    if (destructive) {
+      modalBtnConfirm.className = "modal-btn confirm destructive";
+    } else {
+      modalBtnConfirm.className = "modal-btn confirm";
+    }
+
+    onConfirmCallback = onConfirm;
+    confirmModal.classList.remove("hidden");
+  }
+
+  // Hide modal on Cancel or click outside
+  if (modalBtnCancel) {
+    modalBtnCancel.addEventListener("click", () => {
+      if (confirmModal) confirmModal.classList.add("hidden");
+      onConfirmCallback = null;
+    });
+  }
+
+  if (modalBtnConfirm) {
+    modalBtnConfirm.addEventListener("click", async () => {
+      if (confirmModal) confirmModal.classList.add("hidden");
+      if (onConfirmCallback) {
+        await onConfirmCallback();
+      }
+      onConfirmCallback = null;
+    });
+  }
+
+  // Toast feedback helper
+  function showToast(message) {
+    if (!toastFeedback || !toastMessage) return;
+    toastMessage.textContent = message;
+    toastFeedback.classList.remove("hidden");
+
+    setTimeout(() => {
+      toastFeedback.classList.add("hidden");
+    }, 2500);
+  }
+
+  // Setup Settings Actions Click Listeners
+  if (btnClearToday) {
+    btnClearToday.addEventListener("click", () => {
+      showConfirmModal({
+        title: "Clear Today's Data?",
+        desc: "This will permanently remove today's tracked usage. Yesterday and older history will remain intact.",
+        confirmLabel: "Clear Today",
+        destructive: true,
+        onConfirm: async () => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({ action: "CLEAR_TODAY" }, async (response) => {
+              if (response && response.success) {
+                showToast("Today's usage cleared");
+                await fetchAndUpdateState();
+              } else {
+                showToast("Unable to clear data");
+              }
+            });
+          } else {
+            // Mock clear today's data
+            if (snapshotState) {
+              const todayKey = snapshotState.todayStr;
+              if (snapshotState.weekData[todayKey]) {
+                snapshotState.weekData[todayKey] = { chatgpt: 0, gemini: 0, claude: 0, total: 0 };
+              }
+              // Reset current active session to now
+              snapshotState.sessionStartedAt = Date.now();
+              updateUsageDisplay();
+              renderHistoryView();
+              renderAnalyticsView();
+            }
+            showToast("Today's usage cleared (Mock)");
+          }
+        }
+      });
+    });
+  }
+
+  if (btnClearHistory) {
+    btnClearHistory.addEventListener("click", () => {
+      showConfirmModal({
+        title: "Clear 7-Day History?",
+        desc: "This will permanently remove your stored weekly usage history. Current tracking session will be re-based to now.",
+        confirmLabel: "Clear History",
+        destructive: true,
+        onConfirm: async () => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({ action: "CLEAR_HISTORY" }, async (response) => {
+              if (response && response.success) {
+                showToast("7-Day history cleared");
+                await fetchAndUpdateState();
+              } else {
+                showToast("Unable to clear data");
+              }
+            });
+          } else {
+            // Mock clear weekly history
+            if (snapshotState) {
+              const keys = Object.keys(snapshotState.weekData);
+              keys.forEach(k => {
+                snapshotState.weekData[k] = { chatgpt: 0, gemini: 0, claude: 0, total: 0 };
+              });
+              snapshotState.sessionStartedAt = Date.now();
+              updateUsageDisplay();
+              renderHistoryView();
+              renderAnalyticsView();
+            }
+            showToast("7-Day history cleared (Mock)");
+          }
+        }
+      });
+    });
+  }
+
+  if (btnResetAll) {
+    btnResetAll.addEventListener("click", () => {
+      showConfirmModal({
+        title: "Reset all LLMTrack data?",
+        desc: "This will permanently delete today's usage, 7-day history, analytics, and session state. This cannot be undone.",
+        confirmLabel: "Reset Everything",
+        destructive: true,
+        onConfirm: async () => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({ action: "RESET_ALL_DATA" }, async (response) => {
+              if (response && response.success) {
+                showToast("All tracking data reset");
+                await fetchAndUpdateState();
+              } else {
+                showToast("Unable to reset data");
+              }
+            });
+          } else {
+            // Mock Reset All Data
+            if (snapshotState) {
+              const keys = Object.keys(snapshotState.weekData);
+              keys.forEach(k => {
+                snapshotState.weekData[k] = { chatgpt: 0, gemini: 0, claude: 0, total: 0 };
+              });
+              snapshotState.activePlatform = null;
+              snapshotState.activeTabId = null;
+              snapshotState.sessionStartedAt = null;
+              setUnsupportedPlatform();
+              updateUsageDisplay();
+              renderHistoryView();
+              renderAnalyticsView();
+            }
+            showToast("All tracking data reset (Mock)");
+          }
+        }
+      });
+    });
+  }
 
   // Query background service worker
   if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
@@ -158,7 +350,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           renderHistoryView();
         } else if (activeTabName === "analytics") {
           renderAnalyticsView();
-        } else {
+        } else if (activeTabName === "overview") {
           updateUsageDisplay();
         }
         resolve();
@@ -293,6 +485,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const todayStr = snapshotState.todayStr;
     const currentWeekDates = Object.keys(snapshotState.weekData).sort();
+
+    // Set Date Range
+    if (analyticsDateRange && currentWeekDates.length === 7) {
+      const monStr = currentWeekDates[0];
+      const sunStr = currentWeekDates[6];
+      analyticsDateRange.textContent = formatWeekRange(monStr, sunStr);
+    }
 
     // 1. Accumulate totals directly from the same authoritative snapshot dates
     let weeklyTotalSeconds = 0;

@@ -88,6 +88,30 @@ export async function updateSessionLastActive() {
 }
 
 /**
+ * Re-bases the active session to the current timestamp.
+ */
+export async function rebaseActiveSession() {
+  if (activeSession.activePlatform && activeSession.sessionStartedAt) {
+    activeSession.sessionStartedAt = Date.now();
+    activeSession.lastActive = Date.now();
+    await saveSessionToStorage();
+    console.log("[LLMTrack] Active session start time re-based to now.");
+  }
+}
+
+/**
+ * Completely resets the active session in memory and storage.
+ */
+export async function resetActiveSessionState() {
+  activeSession.activePlatform = null;
+  activeSession.activeTabId = null;
+  activeSession.sessionStartedAt = null;
+  activeSession.lastActive = null;
+  await saveSessionToStorage();
+  console.log("[LLMTrack] Active session memory cleared and reset.");
+}
+
+/**
  * Handle platform and tab state transitions.
  * Ensures transitions to 'Unsupported' (null) are debounced to prevent false negatives during page loading/navigation.
  * @param {string|null} newPlatform - The newly detected platform ('chatgpt', 'gemini', 'claude' or null).

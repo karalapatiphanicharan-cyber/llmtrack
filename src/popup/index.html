@@ -16,11 +16,13 @@
           <div class="brand-text">
             <div class="brand-title-row">
               <span class="logo-text">LLMTrack</span>
-              <span class="badge">PHASE 4</span>
+              <span class="badge">PHASE 5</span>
             </div>
             <p class="subtitle">AI Usage Intelligence</p>
           </div>
         </div>
+        <!-- Settings Gear Button -->
+        <button id="btn-settings" class="settings-gear-btn" title="Settings">⚙</button>
       </div>
 
       <!-- Sub-Navigation Tabs -->
@@ -101,7 +103,7 @@
         <section class="section history-section">
           <div class="section-header">
             <span class="section-title">7-DAY HISTORY</span>
-            <span id="history-date-range" class="status-badge active">AUG 10 — AUG 16</span>
+            <span id="history-date-range" class="status-badge active">MON — SUN</span>
           </div>
 
           <!-- Weekly Total Surface -->
@@ -197,7 +199,7 @@
         <section class="section analytics-section">
           <div class="section-header">
             <span class="section-title">WEEKLY METRICS</span>
-            <span id="analytics-date-range" class="status-badge active">AUG 10 — AUG 16</span>
+            <span id="analytics-date-range" class="status-badge active">MON — SUN</span>
           </div>
 
           <!-- Weekly Total Surface -->
@@ -277,6 +279,98 @@
           </div>
         </section>
       </div>
+
+      <!-- SETTINGS VIEW -->
+      <div id="settings-view" class="view-panel hidden">
+        <section class="section settings-section">
+          <div class="section-header">
+            <span class="section-title">SETTINGS</span>
+          </div>
+
+          <!-- TRACKING SECTION -->
+          <div class="settings-card">
+            <div class="settings-card-title">TRACKING</div>
+            <div class="settings-list">
+              <div class="settings-row">
+                <div class="platform-left">
+                  <span class="dot chatgpt"></span>
+                  <span class="platform-name">ChatGPT</span>
+                </div>
+                <span class="status-badge active" style="font-size: 7.5px;">ON</span>
+              </div>
+              <div class="settings-row">
+                <div class="platform-left">
+                  <span class="dot gemini"></span>
+                  <span class="platform-name">Gemini</span>
+                </div>
+                <span class="status-badge active" style="font-size: 7.5px;">ON</span>
+              </div>
+              <div class="settings-row">
+                <div class="platform-left">
+                  <span class="dot claude"></span>
+                  <span class="platform-name">Claude</span>
+                </div>
+                <span class="status-badge active" style="font-size: 7.5px;">ON</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DATA SECTION -->
+          <div class="settings-card" style="margin-top: 8px;">
+            <div class="settings-card-title">DATA MANAGEMENT</div>
+            <div class="settings-list">
+              <div class="settings-action-row">
+                <div class="settings-action-info">
+                  <div class="action-name">Today's Data</div>
+                  <div class="action-desc">Clear today's tracked usage</div>
+                </div>
+                <button id="btn-clear-today" class="settings-action-btn subtle">CLEAR</button>
+              </div>
+              <div class="settings-action-row">
+                <div class="settings-action-info">
+                  <div class="action-name">7-Day History</div>
+                  <div class="action-desc">Clear weekly history & metrics</div>
+                </div>
+                <button id="btn-clear-history" class="settings-action-btn subtle">CLEAR</button>
+              </div>
+              <div class="settings-action-row">
+                <div class="settings-action-info font-destructive">
+                  <div class="action-name font-destructive">All Tracking Data</div>
+                  <div class="action-desc">Reset all history & session state</div>
+                </div>
+                <button id="btn-reset-all" class="settings-action-btn destructive">RESET</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PRIVACY SECTION -->
+          <div class="settings-card" style="margin-top: 8px;">
+            <div class="settings-card-title">PRIVACY PROMISE</div>
+            <p class="privacy-text">
+              LLMTrack records platform usage and timing. It <strong>never</strong> reads or stores your prompts, AI responses, or conversation content. Data remains 100% local to your browser.
+            </p>
+          </div>
+
+          <!-- ABOUT SECTION -->
+          <div class="settings-card" style="margin-top: 8px; margin-bottom: 8px;">
+            <div class="settings-card-title">ABOUT</div>
+            <div class="about-info">
+              <div class="about-row">
+                <span class="about-label">Product</span>
+                <span class="about-val">LLMTrack AI Usage Intelligence</span>
+              </div>
+              <div class="about-row">
+                <span class="about-label">Version</span>
+                <span id="settings-version" class="about-val">0.1.0</span>
+              </div>
+              <div class="about-row">
+                <span class="about-label">Storage Location</span>
+                <span class="about-val">Local-only</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <!-- Footer -->
@@ -290,6 +384,24 @@
       </div>
       <p class="privacy-promise">Privacy-first · Conversations are never read or stored.</p>
     </footer>
+  </div>
+
+  <!-- Reusable Premium Confirmation Modal Overlay -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div id="modal-title" class="modal-title">Action Title</div>
+      <p id="modal-desc" class="modal-desc">Action description goes here.</p>
+      <div class="modal-actions">
+        <button id="modal-btn-cancel" class="modal-btn cancel">Cancel</button>
+        <button id="modal-btn-confirm" class="modal-btn confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reusable Toast Feedback -->
+  <div id="toast-feedback" class="toast-overlay hidden">
+    <span class="toast-icon">✓</span>
+    <span id="toast-message" class="toast-msg">Success message</span>
   </div>
 
   <script src="popup.js" type="module"></script>

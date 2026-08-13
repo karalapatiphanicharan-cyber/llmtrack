@@ -160,6 +160,29 @@ export async function recordSessionUsage(platform, startTime, endTime) {
 }
 
 /**
+ * Clears today's local date usage data from storage.
+ */
+export async function clearTodayUsage() {
+  const todayStr = getLocalDateString();
+  const storageData = await getData("dailyUsage");
+  const dailyUsage = storageData.dailyUsage || {};
+
+  if (dailyUsage[todayStr]) {
+    delete dailyUsage[todayStr];
+    await setData({ dailyUsage });
+    console.log(`[LLMTrack] Cleared today's usage from dailyUsage: ${todayStr}`);
+  }
+}
+
+/**
+ * Clears the entire 7-day history (all entries in dailyUsage).
+ */
+export async function clearHistoryUsage() {
+  await setData({ dailyUsage: {} });
+  console.log(`[LLMTrack] Cleared all weekly history in dailyUsage.`);
+}
+
+/**
  * Gets the daily usage data from storage.
  * Runs cleanups first to maintain data integrity.
  * @returns {Promise<object>} The daily usage object.
