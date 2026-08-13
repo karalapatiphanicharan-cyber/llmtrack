@@ -111,7 +111,7 @@ body {
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,6 +121,11 @@ body {
 .settings-gear-btn:hover {
   color: var(--text-primary);
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+.settings-gear-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
 }
 
 .settings-gear-btn.active {
@@ -150,13 +155,19 @@ body {
   border-radius: 6px;
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease-in-out;
   letter-spacing: 0.5px;
+  outline: none;
 }
 
 .nav-tab:hover {
   color: var(--text-primary);
   background-color: rgba(255, 255, 255, 0.02);
+}
+
+.nav-tab:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
 }
 
 .nav-tab.active {
@@ -201,6 +212,7 @@ body {
   background-color: rgba(16, 185, 129, 0.15);
   color: var(--success-color);
   border: 1px solid rgba(16, 185, 129, 0.2);
+  animation: pulse 2s infinite ease-in-out;
 }
 
 .status-badge.inactive {
@@ -269,7 +281,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 6px 10px;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Active platform specific borders & glow tints */
@@ -324,7 +336,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 6px 10px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 
 .platform-row:hover {
@@ -393,6 +405,38 @@ body {
   margin-top: 2px;
 }
 
+/* Empty State Styling (Clean and Premium) */
+.empty-state-card {
+  background-color: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.empty-state-icon {
+  font-size: 24px;
+}
+
+.empty-state-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-state-desc {
+  font-size: 9.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  max-width: 220px;
+}
+
 /* History List & Rows */
 .history-list {
   list-style: none;
@@ -410,7 +454,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 5px 8px;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease-in-out;
 }
 
 .history-day-row:hover {
@@ -604,6 +648,50 @@ body {
   text-overflow: ellipsis;
 }
 
+/* Settings Back Navigation Header */
+.settings-back-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding-bottom: 8px;
+}
+
+.back-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease-in-out;
+  outline: none;
+}
+
+.back-btn:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: #334155;
+}
+
+.back-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+.settings-back-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.8px;
+}
+
 /* Settings View Styles */
 .settings-card {
   background-color: var(--bg-secondary);
@@ -669,7 +757,7 @@ body {
   padding: 4px 10px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease-in-out;
   outline: none;
 }
 
@@ -684,6 +772,11 @@ body {
   border-color: #334155;
 }
 
+.settings-action-btn.subtle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
 .settings-action-btn.destructive {
   color: #ef4444;
   background-color: rgba(239, 68, 68, 0.05);
@@ -695,6 +788,11 @@ body {
   background-color: #ef4444;
   border-color: #ef4444;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.settings-action-btn.destructive:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 1px;
 }
 
 .font-destructive {
@@ -789,7 +887,7 @@ body {
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease-in-out;
   outline: none;
 }
 
@@ -803,6 +901,11 @@ body {
   background-color: rgba(255, 255, 255, 0.08);
 }
 
+.modal-btn.cancel:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
 .modal-btn.confirm {
   color: #ffffff;
   background-color: var(--primary-color);
@@ -814,6 +917,11 @@ body {
   border-color: var(--primary-hover);
 }
 
+.modal-btn.confirm:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
 .modal-btn.confirm.destructive {
   background-color: #ef4444;
   border-color: #ef4444;
@@ -823,6 +931,11 @@ body {
 .modal-btn.confirm.destructive:hover {
   background-color: #dc2626;
   border-color: #dc2626;
+}
+
+.modal-btn.confirm.destructive:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 1px;
 }
 
 /* Toast Feedback */
@@ -875,6 +988,7 @@ body {
   display: none !important;
 }
 
+/* Keyframes animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -884,6 +998,12 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 /* Footer Section */
@@ -915,6 +1035,7 @@ body {
 .footer-dot.active {
   background-color: var(--success-color);
   box-shadow: 0 0 4px var(--success-color);
+  animation: pulse 2s infinite ease-in-out;
 }
 
 .footer-label {

@@ -28,11 +28,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tabHistoryBtn = document.getElementById("tab-history");
   const tabAnalyticsBtn = document.getElementById("tab-analytics");
   const btnSettings = document.getElementById("btn-settings");
+  const settingsBackBtn = document.getElementById("settings-back-btn");
 
   const overviewView = document.getElementById("overview-view");
   const historyView = document.getElementById("history-view");
   const analyticsView = document.getElementById("analytics-view");
   const settingsView = document.getElementById("settings-view");
+
+  // History Container and Empty States
+  const historyEmptyState = document.getElementById("history-empty-state");
+  const historyContent = document.getElementById("history-content");
+
+  // Analytics Container and Empty States
+  const analyticsEmptyState = document.getElementById("analytics-empty-state");
+  const analyticsContent = document.getElementById("analytics-content");
 
   // Settings Buttons & About Info
   const btnClearToday = document.getElementById("btn-clear-today");
@@ -84,6 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Authoritative State Memory from Background Snapshot
   let snapshotState = null;
   let activeTabName = "overview"; // overview | history | analytics | settings
+  let previousActiveTabName = "overview"; // Fallback for settings back navigation
   let updateIntervalId = null;
 
   // Set Version Dynamically from Manifest
@@ -105,6 +115,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   tabs.forEach(tab => {
     if (tab.btn) {
       tab.btn.addEventListener("click", () => {
+        if (activeTabName !== "settings") {
+          previousActiveTabName = activeTabName; // Record previous tab before entering settings
+        }
         activeTabName = tab.name;
 
         // Remove active class from all buttons & hide views
@@ -129,6 +142,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Settings Back Button Listener (← settings-back-btn)
+  if (settingsBackBtn) {
+    settingsBackBtn.addEventListener("click", () => {
+      // Find the previous tab and click it to smoothly navigate back
+      const prevTab = tabs.find(t => t.name === previousActiveTabName);
+      if (prevTab && prevTab.btn) {
+        prevTab.btn.click();
+      } else if (tabOverviewBtn) {
+        tabOverviewBtn.click();
+      }
+    });
+  }
+
   // Reusable confirmation dialog helper
   let onConfirmCallback = null;
 
@@ -148,6 +174,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     onConfirmCallback = onConfirm;
     confirmModal.classList.remove("hidden");
+    modalBtnConfirm.focus(); // Shift focus to the action button
   }
 
   // Hide modal on Cancel or click outside
@@ -167,6 +194,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       onConfirmCallback = null;
     });
   }
+
+  // Accessibility: Close Modal on Escape Key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && confirmModal && !confirmModal.classList.contains("hidden")) {
+      if (modalBtnCancel) modalBtnCancel.click();
+    }
+  });
 
   // Toast feedback helper
   function showToast(message) {
@@ -409,6 +443,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
 
+    // Handle History Empty State
+    if (weeklyTotalSeconds === 0) {
+      if (historyEmptyState) historyEmptyState.classList.remove("hidden");
+      if (historyContent) historyContent.classList.add("hidden");
+      return;
+    } else {
+      if (historyEmptyState) historyEmptyState.classList.add("hidden");
+      if (historyContent) historyContent.classList.remove("hidden");
+    }
+
     // 3. Render Weekly Total
     if (weeklyTotalValueElement) {
       weeklyTotalValueElement.textContent = formatSessionDuration(weeklyTotalSeconds * 1000);
@@ -508,6 +552,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         platformWeeklySeconds[p] += dayData[p] || 0;
       });
     });
+
+    // Handle Analytics Empty State
+    if (weeklyTotalSeconds === 0) {
+      if (analyticsEmptyState) analyticsEmptyState.classList.remove("hidden");
+      if (analyticsContent) analyticsContent.classList.add("hidden");
+      return;
+    } else {
+      if (analyticsEmptyState) analyticsEmptyState.classList.add("hidden");
+      if (analyticsContent) analyticsContent.classList.remove("hidden");
+    }
 
     // 2. Render Weekly Total
     if (analyticsWeeklyTotal) {

@@ -16,7 +16,7 @@
           <div class="brand-text">
             <div class="brand-title-row">
               <span class="logo-text">LLMTrack</span>
-              <span class="badge">PHASE 5</span>
+              <span class="badge">PHASE 6</span>
             </div>
             <p class="subtitle">AI Usage Intelligence</p>
           </div>
@@ -41,7 +41,7 @@
         <section class="section current-section">
           <div class="section-header">
             <span class="section-title">CURRENT SESSION</span>
-            <span id="detection-status" class="status-badge inactive">INACTIVE</span>
+            <span id="detection-status" class="status-badge inactive">LOADING...</span>
           </div>
 
           <div class="current-display">
@@ -57,11 +57,11 @@
           <div id="current-card" class="detail-rows">
             <div class="detail-row">
               <span class="detail-label">Started Today</span>
-              <span id="session-started-today" class="detail-value">-</span>
+              <span id="session-started-today" class="detail-value">Loading...</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Current Session</span>
-              <span id="session-current-start" class="detail-value">-</span>
+              <span id="session-current-start" class="detail-value">Loading...</span>
             </div>
           </div>
         </section>
@@ -78,21 +78,21 @@
                 <span class="dot chatgpt"></span>
                 <span class="platform-name">ChatGPT</span>
               </div>
-              <span id="usage-chatgpt" class="platform-time">0s</span>
+              <span id="usage-chatgpt" class="platform-time">Loading...</span>
             </li>
             <li class="platform-row">
               <div class="platform-left">
                 <span class="dot gemini"></span>
                 <span class="platform-name">Gemini</span>
               </div>
-              <span id="usage-gemini" class="platform-time">0s</span>
+              <span id="usage-gemini" class="platform-time">Loading...</span>
             </li>
             <li class="platform-row">
               <div class="platform-left">
                 <span class="dot claude"></span>
                 <span class="platform-name">Claude</span>
               </div>
-              <span id="usage-claude" class="platform-time">0s</span>
+              <span id="usage-claude" class="platform-time">Loading...</span>
             </li>
           </ul>
         </section>
@@ -106,90 +106,100 @@
             <span id="history-date-range" class="status-badge active">MON — SUN</span>
           </div>
 
-          <!-- Weekly Total Surface -->
-          <div class="weekly-total-card">
-            <span class="weekly-total-label">WEEKLY TOTAL</span>
-            <span id="weekly-total-value" class="weekly-total-value">0 min</span>
+          <!-- History Empty State -->
+          <div id="history-empty-state" class="empty-state-card hidden">
+            <div class="empty-state-icon">📊</div>
+            <div class="empty-state-title">No AI usage recorded yet</div>
+            <p class="empty-state-desc">Open ChatGPT, Gemini, or Claude to automatically start tracking.</p>
           </div>
 
-          <!-- 7-Days List -->
-          <ul class="history-list">
-            <li class="history-day-row" id="day-row-0">
-              <div class="day-row-left">
-                <span class="day-abbr">MON</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-0" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-0" class="day-time">—</span>
-              </div>
-            </li>
-            <li class="history-day-row" id="day-row-1">
-              <div class="day-row-left">
-                <span class="day-abbr">TUE</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-1" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-1" class="day-time">—</span>
-              </div>
-            </li>
-            <li class="history-day-row" id="day-row-2">
-              <div class="day-row-left">
-                <span class="day-abbr">WED</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-2" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-2" class="day-time">—</span>
-              </div>
-            </li>
-            <li class="history-day-row" id="day-row-3">
-              <div class="day-row-left">
-                <span class="day-abbr">THU</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-3" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-3" class="day-time">—</span>
-              </div>
-            </li>
-            <li class="history-day-row" id="day-row-4">
-              <div class="day-row-left">
-                <span class="day-abbr">FRI</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-4" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-4" class="day-time">—</span>
-              </div>
-            </li>
-            <li class="history-day-row" id="day-row-5">
-              <div class="day-row-left">
-                <span class="day-abbr">SAT</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-5" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-5" class="day-time">—</span>
-              </div>
-            </li>
-            <li class="history-day-row" id="day-row-6">
-              <div class="day-row-left">
-                <span class="day-abbr">SUN</span>
-                <span class="day-tag hidden">TODAY</span>
-              </div>
-              <div class="day-row-right">
-                <div class="bar-container"><div id="bar-6" class="bar" style="width: 0%"></div></div>
-                <span id="day-val-6" class="day-time">—</span>
-              </div>
-            </li>
-          </ul>
+          <!-- History Content Container -->
+          <div id="history-content">
+            <!-- Weekly Total Surface -->
+            <div class="weekly-total-card">
+              <span class="weekly-total-label">WEEKLY TOTAL</span>
+              <span id="weekly-total-value" class="weekly-total-value">0 min</span>
+            </div>
 
-          <!-- Premium Most Used Platform Breakdown -->
-          <div class="history-summary-box">
-            <span class="summary-label">MOST USED</span>
-            <span id="most-used-platform" class="summary-value">—</span>
+            <!-- 7-Days List -->
+            <ul class="history-list">
+              <li class="history-day-row" id="day-row-0">
+                <div class="day-row-left">
+                  <span class="day-abbr">MON</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-0" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-0" class="day-time">—</span>
+                </div>
+              </li>
+              <li class="history-day-row" id="day-row-1">
+                <div class="day-row-left">
+                  <span class="day-abbr">TUE</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-1" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-1" class="day-time">—</span>
+                </div>
+              </li>
+              <li class="history-day-row" id="day-row-2">
+                <div class="day-row-left">
+                  <span class="day-abbr">WED</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-2" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-2" class="day-time">—</span>
+                </div>
+              </li>
+              <li class="history-day-row" id="day-row-3">
+                <div class="day-row-left">
+                  <span class="day-abbr">THU</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-3" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-3" class="day-time">—</span>
+                </div>
+              </li>
+              <li class="history-day-row" id="day-row-4">
+                <div class="day-row-left">
+                  <span class="day-abbr">FRI</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-4" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-4" class="day-time">—</span>
+                </div>
+              </li>
+              <li class="history-day-row" id="day-row-5">
+                <div class="day-row-left">
+                  <span class="day-abbr">SAT</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-5" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-5" class="day-time">—</span>
+                </div>
+              </li>
+              <li class="history-day-row" id="day-row-6">
+                <div class="day-row-left">
+                  <span class="day-abbr">SUN</span>
+                  <span class="day-tag hidden">TODAY</span>
+                </div>
+                <div class="day-row-right">
+                  <div class="bar-container"><div id="bar-6" class="bar" style="width: 0%"></div></div>
+                  <span id="day-val-6" class="day-time">—</span>
+                </div>
+              </li>
+            </ul>
+
+            <!-- Premium Most Used Platform Breakdown -->
+            <div class="history-summary-box">
+              <span class="summary-label">MOST USED</span>
+              <span id="most-used-platform" class="summary-value">—</span>
+            </div>
           </div>
         </section>
       </div>
@@ -202,79 +212,89 @@
             <span id="analytics-date-range" class="status-badge active">MON — SUN</span>
           </div>
 
-          <!-- Weekly Total Surface -->
-          <div class="weekly-total-card">
-            <span class="weekly-total-label">WEEKLY TOTAL</span>
-            <span id="analytics-weekly-total" class="weekly-total-value">0 min</span>
+          <!-- Analytics Empty State -->
+          <div id="analytics-empty-state" class="empty-state-card hidden">
+            <div class="empty-state-icon">📈</div>
+            <div class="empty-state-title">No analytics available yet</div>
+            <p class="empty-state-desc">Your detailed platform mix and KPI metrics will automatically appear here once tracked.</p>
           </div>
 
-          <!-- Platform Mix Breakdown -->
-          <div class="section-header">
-            <span class="section-title">PLATFORM MIX</span>
-          </div>
-          <div class="analytics-card">
-            <!-- Proportional horizontal stacked platform mix bar -->
-            <div class="stacked-bar-container">
-              <div id="stack-chatgpt" class="stack-segment chatgpt" style="width: 0%"></div>
-              <div id="stack-gemini" class="stack-segment gemini" style="width: 0%"></div>
-              <div id="stack-claude" class="stack-segment claude" style="width: 0%"></div>
+          <!-- Analytics Content Container -->
+          <div id="analytics-content">
+            <!-- Weekly Total Surface -->
+            <div class="weekly-total-card">
+              <span class="weekly-total-label">WEEKLY TOTAL</span>
+              <span id="analytics-weekly-total" class="weekly-total-value">0 min</span>
             </div>
 
-            <!-- Platform details list -->
-            <div class="platform-mix-stats">
-              <div class="mix-row">
-                <div class="platform-left">
-                  <span class="dot chatgpt"></span>
-                  <span class="platform-name">ChatGPT</span>
+            <!-- Platform Mix Breakdown -->
+            <div class="section-header">
+              <span class="section-title">PLATFORM MIX</span>
+            </div>
+            <div class="analytics-card">
+              <!-- Proportional horizontal stacked platform mix bar -->
+              <div class="stacked-bar-container">
+                <div id="stack-chatgpt" class="stack-segment chatgpt" style="width: 0%"></div>
+                <div id="stack-gemini" class="stack-segment gemini" style="width: 0%"></div>
+                <div id="stack-claude" class="stack-segment claude" style="width: 0%"></div>
+              </div>
+
+              <!-- Platform details list -->
+              <div class="platform-mix-stats">
+                <div class="mix-row">
+                  <div class="platform-left">
+                    <span class="dot chatgpt"></span>
+                    <span class="platform-name">ChatGPT</span>
+                  </div>
+                  <div class="mix-right">
+                    <span id="mix-val-chatgpt" class="mix-time">0 min</span>
+                    <span id="mix-pct-chatgpt" class="mix-pct">0%</span>
+                  </div>
                 </div>
-                <div class="mix-right">
-                  <span id="mix-val-chatgpt" class="mix-time">0 min</span>
-                  <span id="mix-pct-chatgpt" class="mix-pct">0%</span>
+                <div class="mix-row">
+                  <div class="platform-left">
+                    <span class="dot gemini"></span>
+                    <span class="platform-name">Gemini</span>
+                  </div>
+                  <div class="mix-right">
+                    <span id="mix-val-gemini" class="mix-time">0 min</span>
+                    <span id="mix-pct-gemini" class="mix-pct">0%</span>
+                  </div>
+                </div>
+                <div class="mix-row">
+                  <div class="platform-left">
+                    <span class="dot claude"></span>
+                    <span class="platform-name">Claude</span>
+                  </div>
+                  <div class="mix-right">
+                    <span id="mix-val-claude" class="mix-time">0 min</span>
+                    <span id="mix-pct-claude" class="mix-pct">0%</span>
+                  </div>
                 </div>
               </div>
-              <div class="mix-row">
-                <div class="platform-left">
-                  <span class="dot gemini"></span>
-                  <span class="platform-name">Gemini</span>
-                </div>
-                <div class="mix-right">
-                  <span id="mix-val-gemini" class="mix-time">0 min</span>
-                  <span id="mix-pct-gemini" class="mix-pct">0%</span>
-                </div>
+            </div>
+
+            <!-- Analytics KPIs Grid -->
+            <div class="analytics-grid">
+              <div class="kpi-box">
+                <span class="kpi-label">MOST USED</span>
+                <span id="kpi-most-used" class="kpi-value">—</span>
               </div>
-              <div class="mix-row">
-                <div class="platform-left">
-                  <span class="dot claude"></span>
-                  <span class="platform-name">Claude</span>
-                </div>
-                <div class="mix-right">
-                  <span id="mix-val-claude" class="mix-time">0 min</span>
-                  <span id="mix-pct-claude" class="mix-pct">0%</span>
-                </div>
+              <div class="kpi-box">
+                <span class="kpi-label">AVG / DAY</span>
+                <span id="kpi-avg-day" class="kpi-value">—</span>
               </div>
             </div>
-          </div>
 
-          <!-- Analytics KPIs Grid -->
-          <div class="analytics-grid">
-            <div class="kpi-box">
-              <span class="kpi-label">MOST USED</span>
-              <span id="kpi-most-used" class="kpi-value">—</span>
-            </div>
-            <div class="kpi-box">
-              <span class="kpi-label">AVG / DAY</span>
-              <span id="kpi-avg-day" class="kpi-value">—</span>
-            </div>
-          </div>
-
-          <div class="analytics-grid" style="margin-top: 6px;">
-            <div class="kpi-box">
-              <span class="kpi-label">HIGHEST DAY</span>
-              <span id="kpi-highest-day" class="kpi-value">—</span>
-            </div>
-            <div class="kpi-box">
-              <span class="kpi-label">LOWEST DAY</span>
-              <span id="kpi-lowest-day" class="kpi-value">—</span>
+            <div class="analytics-grid" style="margin-top: 6px;">
+              <div class="kpi-box">
+                <span class="kpi-label">HIGHEST DAY</span>
+                <span id="kpi-highest-day" class="kpi-value">—</span>
+              </div>
+              <div class="kpi-box">
+                <span class="kpi-label">LOWEST DAY</span>
+                <span id="kpi-lowest-day" class="kpi-value">—</span>
+              </div>
             </div>
           </div>
         </section>
@@ -282,13 +302,15 @@
 
       <!-- SETTINGS VIEW -->
       <div id="settings-view" class="view-panel hidden">
-        <section class="section settings-section">
-          <div class="section-header">
-            <span class="section-title">SETTINGS</span>
-          </div>
+        <!-- Settings Back Navigation Header -->
+        <div class="settings-back-header">
+          <button id="settings-back-btn" class="back-btn" title="Back to main view">←</button>
+          <span class="settings-back-title">SETTINGS</span>
+        </div>
 
+        <section class="section settings-section">
           <!-- TRACKING SECTION -->
-          <div class="settings-card">
+          <div class="settings-card" style="margin-top: 4px;">
             <div class="settings-card-title">TRACKING</div>
             <div class="settings-list">
               <div class="settings-row">
