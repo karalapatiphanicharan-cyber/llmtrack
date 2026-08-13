@@ -2,8 +2,8 @@ import assert from "assert";
 import { detectLLM } from "../src/utils/llmDetector.js";
 import { getData, setData, removeData, clearData, mockStorage } from "../src/utils/storage.js";
 import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration, formatSessionDuration, formatCleanTime, splitSessionByDay, getStartOfCurrentWeek, getCurrentWeekDates } from "../src/utils/time.js";
-import { recordSessionUsage, getDailyUsage, recordFirstOpened, performWeeklyRolloverCleanup, getUsageSnapshot } from "../src/background/usage-tracker.js";
-import { handleTransition, getActiveSession, endActiveSession, reconcileStaleSession, updateSessionLastActive } from "../src/background/session-tracker.js";
+import { recordSessionUsage, getDailyUsage, recordFirstOpened, performWeeklyRolloverCleanup, getUsageSnapshot, clearTodayUsage, clearHistoryUsage } from "../src/background/usage-tracker.js";
+import { handleTransition, getActiveSession, endActiveSession, reconcileStaleSession, updateSessionLastActive, rebaseActiveSession, resetActiveSessionState } from "../src/background/session-tracker.js";
 
 async function runTests() {
   console.log("=== Running LLMTrack Phase 1, 2 & 3 Unit Tests ===\n");
@@ -329,6 +329,69 @@ async function runTests() {
   assert.strictEqual(sanitized[todayStrKey]["gemini"].totalUsageSeconds, 0);
 
   console.log("✅ Data-corruption healing tests passed.");
+
+  // 12. Test Settings Data Deletion and Reset Routines
+  console.log("\nTesting settings data clearing and active session rebasing...");
+  await clearData();
+  await endActiveSession();
+
+  // Establish some historical weekly usage data
+  const tToday = getLocalDateString();
+  const tMon = getCurrentWeekDates()[0];
+  const complexMockData = {
+    [tMon]: { chatgpt: { totalUsageSeconds: 1200 } },
+    [tToday]: { chatgpt: { totalUsageSeconds: 600, firstOpenedAt: Date.now() - 3600 * 1000 } }
+  };
+  await setData({ dailyUsage: complexMockData });
+
+  // Start an active ChatGPT session
+  await handleTransition("chatgpt", 301);
+  session = getActiveSession();
+  assert.strictEqual(session.activePlatform, "chatgpt");
+
+  // Set sessionStartedAt to 20 mins ago (elapsed = 1200 seconds)
+  session.sessionStartedAt = Date.now() - 20 * 60 * 1000;
+  await setData({ activeSession: session });
+
+  // Test CLEAR_TODAY routine
+  await clearTodayUsage();
+  await rebaseActiveSession();
+
+  // Verify today's storage usage is cleared, but Monday remains
+  let clearedTodayUsage = await getDailyUsage();
+  assert.strictEqual(clearedTodayUsage[tToday], undefined);
+  assert.strictEqual(clearedTodayUsage[tMon]["chatgpt"].totalUsageSeconds, 1200);
+
+  // Verify active session was re-based to now (meaning its elapsed contribution since reset is ~0s)
+  session = getActiveSession();
+  assert.strictEqual(session.activePlatform, "chatgpt");
+  assert.ok(Date.now() - session.sessionStartedAt < 5000); // within 5 seconds of now
+
+  // Now, test CLEAR_HISTORY routine
+  // Put back some today usage
+  await setData({ dailyUsage: complexMockData });
+  await clearHistoryUsage();
+  await rebaseActiveSession();
+
+  // Verify all dailyUsage is wiped
+  let clearedHistUsage = await getDailyUsage();
+  assert.deepStrictEqual(clearedHistUsage, {});
+
+  // Test RESET_ALL_DATA routine
+  // Start session again
+  await handleTransition("chatgpt", 301);
+  session = getActiveSession();
+  assert.strictEqual(session.activePlatform, "chatgpt");
+
+  // Call resetActiveSessionState
+  await resetActiveSessionState();
+
+  // Verify activeSession is fully cleared
+  session = getActiveSession();
+  assert.strictEqual(session.activePlatform, null);
+  assert.strictEqual(session.sessionStartedAt, null);
+
+  console.log("✅ Settings clearing and re-basing tests passed successfully.");
 
   console.log("\n🎉 ALL TESTS PASSED! Ready for Phase 3.");
 }

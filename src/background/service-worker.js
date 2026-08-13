@@ -6,8 +6,18 @@
  */
 
 import { initTabManager, reconcileActiveState } from "./tab-manager.js";
-import { initializationPromise, getActiveSession } from "./session-tracker.js";
-import { getDailyUsage, getUsageSnapshot } from "./usage-tracker.js";
+import {
+  initializationPromise,
+  getActiveSession,
+  rebaseActiveSession,
+  resetActiveSessionState
+} from "./session-tracker.js";
+import {
+  getDailyUsage,
+  getUsageSnapshot,
+  clearTodayUsage,
+  clearHistoryUsage
+} from "./usage-tracker.js";
 
 console.log("LLMTrack Background Service Worker initialized.");
 
@@ -22,8 +32,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({
       success: true,
       data: {
-        trackingEngine: "Active (Phase 3 Tracking)",
-        version: "0.3.0"
+        trackingEngine: "Active (Phase 5 Settings & Data)",
+        version: "0.5.0"
       }
     });
   } else if (request.action === "GET_ACTIVE_PLATFORM") {
@@ -71,6 +81,40 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: false, error: err.message });
     });
     return true; // Keep message channel open for async response
+  } else if (request.action === "CLEAR_TODAY") {
+    clearTodayUsage()
+      .then(() => rebaseActiveSession())
+      .then(() => {
+        sendResponse({ success: true });
+      })
+      .catch(err => {
+        console.error("[LLMTrack] Error during CLEAR_TODAY message processing:", err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
+  } else if (request.action === "CLEAR_HISTORY") {
+    clearHistoryUsage()
+      .then(() => rebaseActiveSession())
+      .then(() => {
+        sendResponse({ success: true });
+      })
+      .catch(err => {
+        console.error("[LLMTrack] Error during CLEAR_HISTORY message processing:", err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
+  } else if (request.action === "RESET_ALL_DATA") {
+    clearHistoryUsage()
+      .then(() => resetActiveSessionState())
+      .then(() => reconcileActiveState())
+      .then(() => {
+        sendResponse({ success: true });
+      })
+      .catch(err => {
+        console.error("[LLMTrack] Error during RESET_ALL_DATA message processing:", err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true;
   }
   return true; // Keep message channel open
 });
