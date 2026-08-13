@@ -27,6 +27,15 @@ export function reconcileActiveState() {
         return;
       }
 
+      // If the currently focused window in the OS is a popup window (like our extension's popup),
+      // we do NOT want to end or transition the active session because the user is interacting with
+      // the extension popup. We simply preserve the existing active session state.
+      if (window.focused && window.type === "popup") {
+        console.log("[LLMTrack] Popup window is focused. Preserving active session state.");
+        resolve();
+        return;
+      }
+
       if (!window.focused) {
         console.log("[LLMTrack] Last focused window is not actively focused in OS.");
         initializationPromise.then(() => {
