@@ -3,7 +3,7 @@ import { detectLLM } from "../src/utils/llmDetector.js";
 import { getData, setData, removeData, clearData, mockStorage } from "../src/utils/storage.js";
 import { getCurrentTimestamp, getLocalDateString, getElapsedTime, formatDuration, formatSessionDuration, formatCleanTime, splitSessionByDay, getStartOfCurrentWeek, getCurrentWeekDates } from "../src/utils/time.js";
 import { recordSessionUsage, getDailyUsage, recordFirstOpened, performWeeklyRolloverCleanup, getUsageSnapshot } from "../src/background/usage-tracker.js";
-import { handleTransition, getActiveSession, endActiveSession } from "../src/background/session-tracker.js";
+import { handleTransition, getActiveSession, endActiveSession, reconcileStaleSession, updateSessionLastActive } from "../src/background/session-tracker.js";
 
 async function runTests() {
   console.log("=== Running LLMTrack Phase 1, 2 & 3 Unit Tests ===\n");
@@ -178,16 +178,17 @@ async function runTests() {
   // 7. Test Centralized Snapshot Logic (getUsageSnapshot)
   console.log("\nTesting getUsageSnapshot...");
   await clearData();
-  // Setup Monday total
-  const monDateStr = currentWeekDates[0]; // Monday
-  const mockWeekData = {
+
+  const realWeekDates = getCurrentWeekDates();
+  const monDateStr = realWeekDates[0]; // Monday
+  const mockWeekDataSnapshot = {
     [monDateStr]: {
-      chatgpt: { totalUsageSeconds: 120, firstOpenedAt: 1786500000000 }
+      chatgpt: { totalUsageSeconds: 120, firstOpenedAt: Date.now() - 24 * 3600 * 1000 }
     }
   };
-  await setData({ dailyUsage: mockWeekData });
+  await setData({ dailyUsage: mockWeekDataSnapshot });
 
-  // Mock active session running right now (on Wednesday)
+  // Mock active session running right now (on real today)
   const activeSess = {
     activePlatform: "chatgpt",
     activeTabId: 501,
@@ -204,10 +205,10 @@ async function runTests() {
   // Monday's total must be preserved exactly (120s)
   assert.strictEqual(snapshot.weekData[monDateStr].chatgpt, 120);
 
-  // Today (Wednesday) must contain the 30 seconds of live running session!
-  const wedDateStr = currentWeekDates[2]; // Wednesday
-  assert.strictEqual(snapshot.weekData[wedDateStr].chatgpt, 30);
-  assert.strictEqual(snapshot.weekData[wedDateStr].total, 30);
+  // Today must contain the 30 seconds of live running session!
+  const todayDateStr = getLocalDateString();
+  assert.strictEqual(snapshot.weekData[todayDateStr].chatgpt, 30);
+  assert.strictEqual(snapshot.weekData[todayDateStr].total, 30);
 
   console.log("✅ getUsageSnapshot tests passed successfully!");
 
@@ -271,6 +272,63 @@ async function runTests() {
   assert.strictEqual(session.sessionStartedAt, null);
 
   console.log("✅ session-tracker.js lifecycle tests passed.");
+
+  // 10. Test Stale Session Detection and Healing
+  console.log("\nTesting stale session detection and healing...");
+  await clearData();
+  await endActiveSession();
+
+  // Mock an active session started 30 mins ago, and last active 20 mins ago (10 min active)
+  const startTime = Date.now() - 30 * 60 * 1000;
+  const lastActiveTime = Date.now() - 20 * 60 * 1000;
+
+  session = getActiveSession();
+  session.activePlatform = "chatgpt";
+  session.activeTabId = 201;
+  session.sessionStartedAt = startTime;
+  session.lastActive = lastActiveTime;
+  await setData({ activeSession: session });
+
+  // Trigger reconciliation by transitioning to unsupported
+  // Reconcile stale session should run and finalize session at lastActiveTime (10 min = 600s)
+  await handleTransition(null, 201);
+
+  // Verify session was terminated
+  session = getActiveSession();
+  assert.strictEqual(session.activePlatform, null);
+  assert.strictEqual(session.sessionStartedAt, null);
+
+  // Verify usage recorded up to lastActiveTime (10 minutes)
+  usage = await getDailyUsage();
+  const todayStrKey = getLocalDateString();
+  assert.strictEqual(usage[todayStrKey]["chatgpt"].totalUsageSeconds, 10 * 60);
+
+  console.log("✅ Stale session detection and healing tests passed.");
+
+  // 11. Test Data-Corruption Healing
+  console.log("\nTesting data-corruption healing...");
+  await clearData();
+
+  // Set up a corrupted record: today has a firstOpenedAt 5 minutes ago, but totalUsageSeconds is 9 hours
+  const firstOpened = Date.now() - 5 * 60 * 1000;
+  const corruptedUsageData = {
+    [todayStrKey]: {
+      chatgpt: { totalUsageSeconds: 9 * 3600, firstOpenedAt: firstOpened },
+      gemini: { totalUsageSeconds: -50 } // negative usage
+    }
+  };
+  await setData({ dailyUsage: corruptedUsageData });
+
+  // Running performWeeklyRolloverCleanup should sanitize these
+  const sanitized = await performWeeklyRolloverCleanup();
+
+  // ChatGPT should be reset to 0 because 9 hours is impossible since firstOpened (5 min ago)
+  assert.strictEqual(sanitized[todayStrKey]["chatgpt"].totalUsageSeconds, 0);
+
+  // Gemini should be reset to 0 because of negative value
+  assert.strictEqual(sanitized[todayStrKey]["gemini"].totalUsageSeconds, 0);
+
+  console.log("✅ Data-corruption healing tests passed.");
 
   console.log("\n🎉 ALL TESTS PASSED! Ready for Phase 3.");
 }
